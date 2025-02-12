@@ -1,13 +1,14 @@
-﻿using System;
+﻿using SyncFlash.Services;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SyncFlash
@@ -17,24 +18,27 @@ namespace SyncFlash
         public string DriveLette;
         public const string cfg_file = "conf.ini";
         string pc_name = Environment.MachineName;
-        List<Project> Projects;
+        BindingList<Project> Projects = new BindingList<Project>();
         private bool IsRunningSync=false; // if sync is running
+        private readonly IFileSyncService _fileSyncService;
+        private readonly IConfigService _configService;
+        private readonly IProgress<string> _progress;
+        private CancellationTokenSource _syncCancellationTokenSource;
+
         Thread SyncThread; 
         Thread CopyDIRSThread; //процесс принудительного копирования папки
         MyTimer tmr;
-        public static configmanager cfg;
         public static LogForm log;
         public Form1()
         { //TODO SYNC SOME PROJECTS 
             InitializeComponent();
+            _fileSyncService = new FileSyncService();
+            _configService = new ConfigService(cfg_file);
+            _progress = new Progress<string>(message => CONSTS.AddNewLine(tblog, message));
+            Projects = _configService.GetProjects();
             log = new LogForm();
             tmr = new MyTimer(log);
-            cfg = new configmanager(cfg_file);
-            Projects = cfg.ReadAllProjects() ?? new List<Project>();
-            foreach (var p in Projects)
-            {
-                List_Projects.Items.Add(p.ToString());
-            }
+            List_Projects.DataSource = Projects;
             DriveLette = CONSTS.GetDriveLetter();
             button1.Text = CONSTS.btSyncText1;
             this.FormClosing += Form1_FormClosing;
@@ -42,7 +46,8 @@ namespace SyncFlash
             list_dirs.SelectedIndexChanged += List_dirs_SelectedIndexChanged;
             list_dirs.DoubleClick += List_dirs_DoubleClick;
             checkBox1.CheckedChanged += CheckBox1_CheckedChanged;
-            CONSTS.AddNewLine(tblog, "USB-Flash: " + DriveLette);
+            _progress.Report("USB-Flash: " + DriveLette);
+            button1.Click += button1_Click;
 
         }
 
@@ -89,7 +94,7 @@ namespace SyncFlash
                 listExceptions.Items.Clear(); //clear list
                 return;
             }
-            var selectedProj = Projects.FirstOrDefault(x => x.Name == List_Projects.SelectedItem.ToString());
+            var selectedProj = GetSelectedProject();
             var selectedDir = selectedProj.AllProjectDirs.FirstOrDefault(x => x.Dir == list_dirs.SelectedItems[0].Text);
             //show Dir info
 
@@ -121,17 +126,118 @@ namespace SyncFlash
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            StartAutoSync();
+            DisplayDirs();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, EventArgs e)
         {
-            var selected = List_Projects.SelectedItem;
-            if (selected == null) return;
-            var P = Projects.First(x => x.Name == selected.ToString());
-            tblog.Rows.Clear();
-            StartSync(P);
+            // Если уже идет синхронизация – отменяем её
+            if (_syncCancellationTokenSource != null)
+            {
+                _syncCancellationTokenSource.Cancel();
+                _syncCancellationTokenSource = null;
+                button1.Text = CONSTS.btSyncText1; // Возвращаем кнопку в исходное состояние
+                return;
+            }
+
+            var selectedProject = GetSelectedProject();
+            if (selectedProject == null) return;
+
+            // Меняем текст кнопки на "Остановить синхронизацию"
+            button1.Text = CONSTS.btSyncText2;
+
+            _syncCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _syncCancellationTokenSource.Token;
+
+            try
+            {
+                // Этап 1: Анализ файлов
+                var selectedFiles = await AnalyzeProjectAsync(selectedProject);
+                if (selectedFiles == null)
+                {
+                    button1.Text = CONSTS.btSyncText1; // Вернуть текст кнопки, если анализ не дал результатов
+                    return;
+                }
+
+                // Этап 2: Синхронизация файлов
+                await SyncSelectedFilesAsync(selectedProject, selectedFiles, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Синхронизация прервана пользователем.");
+            }
+            finally
+            {
+                button1.Text = CONSTS.btSyncText1; // Возвращаем кнопку в исходное состояние
+                _syncCancellationTokenSource = null;
+            }
+
         }
+
+        private async Task<List<Queue>> AnalyzeProjectAsync(Project project)
+        {
+            var queue = await _fileSyncService.AnalyzeFilesAsync(project);
+
+            if (queue.Count == 0)
+            {
+                MessageBox.Show("Все папки одинаковые, нечего синхронизировать.");
+                return null;
+            }
+
+            // Открываем окно для выбора файлов пользователем
+            using (var msgBox = new MsgDialog(project, queue))
+            {
+                var result = msgBox.ShowDialog();
+                SaveAllProjects();
+                if (result != DialogResult.OK) return null;
+            }
+
+            return queue; // Возвращаем отфильтрованный пользователем список файлов
+        }
+
+       
+        private async Task SyncSelectedFilesAsync(Project project, List<Queue> selectedFiles, CancellationToken cancellationToken)
+        {
+            if (selectedFiles == null || selectedFiles.Count == 0)
+            {
+                MessageBox.Show("Не выбраны файлы для синхронизации.");
+                return;
+            }
+
+            await _fileSyncService.SyncFilesAsync(selectedFiles, _progress, cancellationToken);
+
+            // Обновляем данные проекта после успешной синхронизации
+            project.LastSyncTime = DateTime.Now;
+            project.LastSyncSize = GetProjectSize(project);
+
+            SaveAllProjects();
+        }
+
+
+
+        private long GetProjectSize(Project project)
+        {
+            long totalSize = 0;
+            foreach (var dir in project.AllProjectDirs)
+            {
+                if (!Directory.Exists(dir.Dir)) continue;
+                totalSize += Directory.GetFiles(dir.Dir, "*", SearchOption.AllDirectories)
+                                      .Sum(f => new FileInfo(f).Length);
+            }
+            return totalSize;
+        }
+
+        private Project GetSelectedProject()
+        {
+            if (List_Projects.SelectedItem == null) return null;
+            if (List_Projects.SelectedItem is Project selectedProject)
+            {
+                return selectedProject;
+            }
+            return null;
+
+        }
+
         private void btSelectUSB_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog fd = new FolderBrowserDialog();
@@ -144,282 +250,18 @@ namespace SyncFlash
             CONSTS.AddNewLine(tblog, "New USB letter: " + DriveLette);
         }
 
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-            if (button1.Text == CONSTS.btSyncText2)
-            {
-                // tmr.Start("Aborting process");
-                if (SyncThread != null && SyncThread.IsAlive) SyncThread.Abort();
-                if (CopyDIRSThread != null && CopyDIRSThread.IsAlive) CopyDIRSThread.Abort();
-                CONSTS.EnableButton(button1);
-                CONSTS.AddNewLine(tblog, "Прервано пользователем");
-               // tmr.Stop();
-                return;
-            }
-            log.ClearLog();
-            SyncSelectedProjects();
-        }
-
-
-
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
             if (List_Projects.SelectedItems.Count != 1) return;
-            var selectedProj = Projects.FirstOrDefault(x => x.Name == List_Projects.SelectedItem.ToString());
+            var selectedProj = GetSelectedProject();
             if (selectedProj != null) selectedProj.AutoSync = checkBox2.Checked;
-            //SaveAllProjects();
+            SaveAllProjects();
         }
         #endregion
 
 
-
-        /// <summary>
-        /// Sync All online directories of project
-        /// </summary>
-        /// <param name="project"></param>
-        /// /// <param name="silentMode">true - without dialog boxes</param>
-        private void StartSync(Project project, bool silentMode = false)
-        {
-            // if (List_Projects.SelectedItem == null) return;
-
-            CONSTS.DisableButton(button1);
-            // var selectedProj = Projects.First(x => x.Name == List_Projects.SelectedItem.ToString());
-            SyncThread = new Thread(delegate ()
-                {
-                    try
-                    {
-                        SetSyncStatus(true);
-                        int newfiles = 0;
-                        int updatedfiles = 0;
-                        int errorCopy = 0;
-
-                    var OnlineDirs = project.OnlineDirs.Where(x=>x.PC_Name==pc_name || x.PC_Name==CONSTS.FlashDrive);//.AllProjectDirs.Where(x => x.IsOnline); 
-                        
-                    if (OnlineDirs.Count() == 0) { SetSyncStatus(false); return; }
-                    if (OnlineDirs.Count() == 1)
-                    {
-
-                            foreach (var t in OnlineDirs.First().Info2())
-                            {
-                                tmr.Start("Вывод инфо директории");
-                                CONSTS.AddNewLine(tblog, t);
-                                tmr.Stop();
-                            }
-                            SetSyncStatus(false);
-                            return;
-                        }
-
-
-                        if (OnlineDirs.Count() > 1) //run SYNC
-                        {
-
-                            //DateTime t = DateTime.Now;
-                            int filesCount = 0; //count of files in dir
-                            int cTotal = 0;
-                            List<Queue> queue = new List<Queue>();//очередь файлов источника и назначений
-                            Queue.Count = 0;
-                            //перебор всех Онлайн директорий
-                            List<string> skippedFiles = new List<string>(); //relativ path!!!
-                            foreach (var dir in OnlineDirs)
-                            {
-                                dir.ReadFiles();
-                            }
-                            foreach (var Dir in OnlineDirs) //перебор все папок проекта
-                            {
-
-                                //каждый файл ищется в других папках проекта и добавляется в очередь
-                                foreach (var dateFile in Dir.AllFiles())
-                                {
-                                    //получаем относительный путь файла
-                                     string relatePath = GetRelationPath(dateFile.Key, Dir.Dir);
-                                    //проверялся ли такой файл раньше?
-                                    if (skippedFiles.Contains(relatePath)) continue; // ДА - пропускаем
-                                                                                     //проверяем, нет ли такого файла уже в очереди 
-                                                                                     //поиск файла в очереди
-                                    if (queue.Any(x => x.SourceFile.EndsWith(relatePath))) continue; //dataFile.Key - Full filePath
-
-                                    var newest = dateFile; //самый свежий файл
-                                    string SrcDir = Dir.Dir;
-                                    //создаем список файлов, которые нужно заменить файлом dateFile, файл назначения
-                                    //TODO create new structure
-                                    // Dictionary<string, DateTime> otherFiles = new Dictionary<string, DateTime>();
-
-                                    List<Tuple<string, string, DateTime, bool>> otherFiles = new List<Tuple<string, string, DateTime, bool>>();
-                                    //item1 = Fullpath,
-                                    //item2 = Dir,
-                                    //item3 = DateTime lastWrite,
-                                    //item4 = IsNewfile
-                                    foreach (var otherDir in OnlineDirs) //Поиск текущего файла dateFile в остальных директориях
-                                    {
-                                        if (otherDir == Dir) continue; //пропуск текущей директории
-                                        var file = otherDir.FindFile(relatePath);//поиск такого же файла
-                                                                                 //если такого файла в Директории нет
-                                        if (String.IsNullOrEmpty(file.Key)) //создадим путь для копирования в эту директорию
-                                        {
-                                            //пара значений (Путь файла, Время последнего изменения)
-                                            file = new KeyValuePair<string, DateTime>
-                                            (newest.Key.Replace(Dir.Dir, otherDir.Dir), newest.Value);
-                                            otherFiles.Add(new Tuple<string, string, DateTime, bool>(file.Key, otherDir.Dir, file.Value, true));//добавление в список назначения
-                                            continue;
-                                        }
-                                        if (newest.Value > file.Value)
-                                            otherFiles.Add(new Tuple<string, string, DateTime, bool>(file.Key, otherDir.Dir, file.Value, false));//добавление файла в список файлов
-                                        else if (newest.Value == file.Value)
-                                        {
-                                            continue; //SKIP  SAME FILES, DONT COPY!!!
-                                        }
-                                        else
-                                        //меняем переменную новейшего файла с текущим
-                                        {
-                                            if (!otherFiles.Any(x => x.Item1 == newest.Key))
-                                                otherFiles.Add(new Tuple<string, string, DateTime, bool>(newest.Key, Dir.Dir, newest.Value, false));
-                                            {
-                                                newest = file;
-                                                SrcDir = otherDir.Dir;
-                                            }
-                                        }
-                                    }
-                                    // tmr.Stop(1);
-                                    //нашли самый новый файл dateFile среди остальных директорий
-                                    //теперь добавляем в очередь
-                                    if (otherFiles.Count() != 0)
-                                        foreach (var otherfile in otherFiles)
-                                        {//Добавление для каждого файла  назначения своей очереди
-                                            queue.Add(new Queue(true, //Active status
-                                                newest.Key,         //Full Source filepath
-                                                otherfile.Item1,    //full Targer filepath
-                                                SrcDir,             //Directory of source file
-                                                otherfile.Item2,    //directory of target file
-                                                newest.Value,       //last modification datetime Source File
-                                                otherfile.Item3,    //last modification datetime Target File
-                                                otherfile.Item4));  //is new file? or overwrited
-                                        }
-
-                                    else skippedFiles.Add(GetRelationPath(newest.Key, Dir.Dir)); //если все файлы одинаковые как newest - пропускаем
-                                }
-                            }//проверили все файлы и добавили их в очередь
-                             //проверяем есть ли что копировать
-                            if (queue.Count == 0)
-                            {
-                                if (!silentMode) MessageBox.Show("Все папки одинаковые, нечего синхронизировать");
-                                CONSTS.AddNewLine(tblog, project.Name + ": Нечего синхронизировать.");
-                                SetSyncStatus(false);
-                                return;
-                            }
-
-
-                            if (!silentMode)// not silent
-                            {
-
-
-                                var msgBox = new MsgDialog(queue);
-                                var dr = msgBox.ShowDialog();
-                                if (dr != DialogResult.OK) { SetSyncStatus(false); return; }
-                            }
-
-                            CONSTS.AddNewLine(tblog, "--------------------------------------------");
-                            cTotal = queue.Count(); //count of SrcFiles
-                            filesCount = 0; //total copied DestFiles 
-                            int nUpd = 0;//count of updated files
-                            int nNew = 0; //count of new files
-                            foreach (var File in queue) //перебор файлов, которые надо копировать                            {
-                            {
-                                string SrcFile = File.SourceFile;
-                                string DstFile = File.TargetFile;
-                                string DstProjDir;
-                                string SrcProjDir = File.SourceFileProjectDir; //Папка проекта-источник
-                                                                               // if (!Directory.Exists(SrcFile)) Directory.CreateDirectory(SrcFile);
-                                                                               //var AllDestFiles = File.Value; //список куда копировать
-                                                                               // int cAllSource = AllDestFiles.Count;
-                                                                               //cTotal += AllDestFiles.Count;
-                                                                               //================COPY========    
-                                int ID = 1000;
-                                //процесс копирования
-                                {
-
-                                    tmr.Start(DstFile, ID);
-                                    filesCount++;
-                                    if (System.IO.File.Exists(DstFile))//File exist
-                                    {
-                                        try
-                                        {
-                                            //update file
-                                            var size = new FileInfo(SrcFile).Length;
-                                            CONSTS.AddNewLine(tblog, filesCount.ToString() + "). " + "Обновленный :> " + SrcFile +
-                                                "\t(" + ((double)size / 1000) + "kbit)");
-                                            CONSTS.AddToTempLine(tblog, "   Запуск  :> " + SrcFile + " ==>" + DstFile);
-                                            System.IO.File.Copy(SrcFile, DstFile, true);
-                                            CONSTS.AddNewLine(tblog, "   Updated :> " + DstFile);
-                                            nUpd++;
-
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            errorCopy++;
-                                            CONSTS.AddNewLine(tblog,
-                                                "err:>\t" + ex.Message);
-                                        }
-
-
-                                    }
-                                    else //copy new file
-                                    {
-                                        string Fullfiledir = SrcFile.Remove(SrcFile.Length - SrcFile.Split('\\').Last().Length);//полный путь файла-источника
-                                        var targetProjDir = project.AllProjectDirs.FirstOrDefault(x => DstFile.Contains(x.Dir)).Dir;//директория проекта файла-источника
-                                        string relativefiledir = GetRelationPath(Fullfiledir, SrcProjDir); //вложенная папка(папки) внутри директории проекта
-                                        string targetDir = targetProjDir + relativefiledir; //Полный путь папки-назначения
-                                        if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
-                                        try
-                                        {
-
-                                            var size = new FileInfo(SrcFile).Length;
-                                            CONSTS.AddNewLine(tblog, filesCount.ToString() + "). " + "Новый :> " + SrcFile +
-                                                "\t(" + ((double)size / 1000) + "kbit)");
-                                            CONSTS.AddToTempLine(tblog, "   Запуск  :> " + SrcFile + " ==>" + DstFile);
-                                            System.IO.File.Copy(SrcFile, DstFile, true);
-                                            CONSTS.AddNewLine(tblog, "   Copied  :> " + DstFile);
-                                            nNew++;
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            errorCopy++;
-                                            CONSTS.AddNewLine(tblog,
-                                                "err:>\t" + DstFile + "\t" + ex.Message);
-                                        }
-
-                                    }//end IF Else
-                                    CONSTS.invokeProgress(progressBar1, (int)(filesCount * 100 / cTotal));
-                                    tmr.Stop(ID); ID++;
-                                } //конец перебора файлов назначения
-
-                            }//конец перебора исходных файлов
-
-                            CONSTS.AddNewLine(tblog, "--------------------------------");
-                            CONSTS.AddNewLine(tblog, project.Name + " синхронизирован.");
-                            CONSTS.AddNewLine(tblog, "Новых файлов: \t\t" + nNew.ToString());
-                            CONSTS.AddNewLine(tblog, "Обновлено файлов:  \t" + nUpd.ToString());
-                            CONSTS.AddNewLine(tblog, "Всего исходных файлов:\t" + cTotal.ToString());
-                            CONSTS.AddNewLine(tblog, "Всего скопировано: \t" + cTotal.ToString());
-                            CONSTS.AddNewLine(tblog, "Ошибок копирования:\t" + errorCopy.ToString());
-                            CONSTS.EnableButton(button1);
-                           // Projects = cfg.ReadAllProjects();
-
-                        }
-
-
-                    }
-                    finally
-                    {
-                        CONSTS.EnableButton(button1);
-                        SetSyncStatus(false);
-
-                    }
-                }
-
-
-            );
-            SyncThread.Start();
-        }
+       
+        
         /// <summary>
         /// Выделяет одинаковую часть пусти для файлов одного проекта
         /// </summary>
@@ -441,7 +283,7 @@ namespace SyncFlash
             if (List_Projects.SelectedItem == null)
             { return; }
 
-            var selectedProj = Projects.First(x => x.Name == List_Projects.SelectedItem.ToString());
+            var selectedProj = GetSelectedProject();
             checkBox2.Checked = selectedProj.AutoSync;
             foreach (var item in selectedProj.AllProjectDirs)
             {
@@ -461,42 +303,47 @@ namespace SyncFlash
 
         private void SaveAllProjects()
         {
-            if (Projects != null && Projects.Count != 0) cfg.SaveProjects(Projects);
+           if (!_configService.SaveProjects(Projects)) _progress.Report("Error saving list of projects");
 
         }
 
         #region contextMenu
         private void добавитьПроектToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Input input = new Input();
-            input.ShowDialog();
-            if (!String.IsNullOrWhiteSpace(input.TEXT) && !List_Projects.Items.Contains(input.TEXT))
+            using (var dialog = new ProjectNameDialog())
             {
-                List_Projects.Items.Add(input.TEXT);
-                var proj = new Project(input.TEXT);
-                Projects.Add(proj);
-                //SaveAllProjects();
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    string projectName = dialog.ProjectName;
+
+                    if (Projects.Any(x=>x.Name == projectName))
+                    {
+                        MessageBox.Show("Такой проект уже существует!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var project = new Project(projectName);
+                    Projects.Add(project);
+                    SaveAllProjects();
+                }
             }
         }
 
         private void переименоватьToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (List_Projects.SelectedItems.Count != 1) return;
-            var selectedProj = List_Projects.SelectedItem.ToString();
-            var inputDialog = new Input();
-            inputDialog.button1.Visible = false;
-            inputDialog.TEXT = selectedProj;
+            var selectedProj = GetSelectedProject();
+            var inputDialog = new ProjectNameDialog(selectedProj.Name);
             var dr = inputDialog.ShowDialog();
             if (dr != DialogResult.OK) return;
-            if (List_Projects.Items.Contains(inputDialog.TEXT) && inputDialog.TEXT != selectedProj)
+            var newName = inputDialog.ProjectName;
+            if (Projects.Any(c=>c.Name == newName))
             {
                 MessageBox.Show("Такое имя уже есть в списке.");
                 return;
             }
-
-            Projects.First(x => x.Name == selectedProj).Name = inputDialog.TEXT;
-            List_Projects.Items[List_Projects.SelectedIndex] = inputDialog.TEXT;
-            //SaveAllProjects();
+            selectedProj.Name = newName;
+            SaveAllProjects();
 
         }
         private void синхронизироватьToolStripMenuItem_Click(object sender, EventArgs e)
@@ -513,8 +360,8 @@ namespace SyncFlash
                 list_dirs.Items.Contains(new ListViewItem(inputDir)) ||
                 selected == null) return;
 
-            if (!list_dirs.Items.Contains(new ListViewItem(inputDir))) list_dirs.Items.Add(inputDir);
-            var p = Projects.First(x => x.Name == selected.ToString());
+            list_dirs.Items.Add(inputDir);
+            var p = GetSelectedProject();
             var lette = input.TEXT.Split('\\')[0];
             if (lette == DriveLette)
             {//removable disk
@@ -525,63 +372,69 @@ namespace SyncFlash
             {
                 p.AllProjectDirs.Add(new Projdir(inputDir, p));
             }
-
-           // SaveAllProjects();
+            p.OnlineDirs.Clear();
+           SaveAllProjects();
         }
 
         private void удалитьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selected = List_Projects.SelectedItem;
             if (selected == null) return;
-            var selectedDir = list_dirs.SelectedItems;
-            if (selectedDir.Count == 0) return;
-            string DirRemove = selectedDir[0].Text;
+            var selectedDirs = list_dirs.SelectedItems;
+            if (selectedDirs.Count == 0) return;
+            string DirRemove = selectedDirs[0].Text;
             //if (DriveLette == DirRemove.Split('\\')[0])//FlashDrive
             //{
             //    DirRemove = GetRelationPath(DirRemove, DriveLette);
             //}
-            var proj = Projects.First(x => x.Name == selected.ToString());
-            if(proj!=null)proj.RemoveDir(DirRemove);
-            list_dirs.Items.Remove(selectedDir[0]);
-           // SaveAllProjects();
+            var proj = GetSelectedProject();
+            if (proj!=null)proj.RemoveDir(DirRemove);
+            list_dirs.Items.Remove(selectedDirs[0]);
+            proj.OnlineDirs.Clear();
+            SaveAllProjects();
         }
 
         private void удалитьПроектToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selected = List_Projects.SelectedItem;
             if (selected == null) return;
-            Projects.Remove(Projects.First(x => x.Name == selected.ToString()));
-            List_Projects.Items.Remove(selected);
-          //  SaveAllProjects();
+            Projects.Remove(GetSelectedProject());
+            SaveAllProjects();
         }
+
         //Add Except Dir
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
             var selected = List_Projects.SelectedItem;//selected project in List
             if (selected == null) return;
-            var selectedDir = list_dirs.SelectedItems; //Selected directory into project
-            if (selectedDir.Count == 0)
+            string selectedDir; //Selected directory into project
+            if (list_dirs.SelectedItems.Count == 0)
             {
-                CONSTS.AddNewLine(tblog, "Для добавления исключений" +
-                    " нужно выбрать одну из папок проекта, в котором будете указывать исключения");
-                return;
+                if (list_dirs.Items.Count != 0)
+                    selectedDir = list_dirs.Items[0].Text;
+                else
+                    selectedDir = Environment.CurrentDirectory;
             }
-            var selectedExc = listExceptions.SelectedItems;
+            else
+            {
+                selectedDir = list_dirs.SelectedItems[0].Text;
+            }
+    
             Input input = new Input();
-            if (selectedExc.Count == 1) input.TEXT = selectedExc[0].ToString();
+            input.TEXT = selectedDir;
             var dg = input.ShowDialog();
             if (dg != DialogResult.OK) return;
             if (string.IsNullOrWhiteSpace(input.TEXT) ||
                 listExceptions.Items.Contains(input.TEXT)) return;
-            var pr = Projects.First(x => x.Name == selected.ToString()); //selected proj
+            var pr = GetSelectedProject();
 
             string relpath = input.TEXT.TrimEnd('\\').Contains(":\\") ?
-                GetRelationPath(input.TEXT.TrimEnd('\\'), selectedDir[0].Text) : input.TEXT.TrimEnd('\\');
+                GetRelationPath(input.TEXT.TrimEnd('\\'), selectedDir) : input.TEXT.TrimEnd('\\');
             if (pr.ExceptionDirs.Contains(relpath)) return;
             pr.ExceptionDirs.Add(relpath);//добавление относительного пути
             listExceptions.Items.Clear();
             listExceptions.Items.AddRange(pr.ExceptionDirs.ToArray());
-            //SaveAllProjects();
+            SaveAllProjects();
         }
 
         //remove Except dir
@@ -598,7 +451,7 @@ namespace SyncFlash
             }
             var selectedExc = listExceptions.SelectedItems;
             if (selectedExc.Count == 0) return;
-            var pr = Projects.First(x => x.Name == selected.ToString());
+            var pr = GetSelectedProject();
             string selExc = selectedExc[0].ToString();
             if (!pr.ExceptionDirs.Contains(selExc))
                 return;
@@ -619,13 +472,13 @@ namespace SyncFlash
         /// </summary>
         private void SyncSelectedProjects()
         {
-            tmr.Start("Подготовка синхронизации");
-            var selected = List_Projects.SelectedItem;
-            if (selected == null) return;
-            var P = Projects.First(x => x.Name == selected.ToString());
-            tblog.Rows.Clear();
-            tmr.Stop();
-            StartSync(P, cbSilent.Checked);
+            //tmr.Start("Подготовка синхронизации");
+            //var selected = List_Projects.SelectedItem;
+            //if (selected == null) return;
+            //var P = GetSelectedProject();
+            //tblog.Rows.Clear();
+            //tmr.Stop();
+            //StartSync(P, cbSilent.Checked);
         }
         //TODO Menu/edit dirs
 
@@ -634,27 +487,27 @@ namespace SyncFlash
         /// </summary>
         public void StartAutoSync()
         {
-            Thread autoSyncThread = new Thread(delegate ()
-              {
-                  var projAuto = Projects.Where(x => x.AutoSync);//All autosync projects
-                  if (projAuto.Count() == 0)
-                  {
-                      CONSTS.AddNewLine(tblog, "Nothing for autosync");
-                      return;
-                  }
-                  CONSTS.AddNewLine(tblog, "For AutoSync " + projAuto.Count() + " projects");
-                  foreach (var project in projAuto)
-                  {
-                      if (SyncThread != null)
-                          while (IsRunningSync || SyncThread.IsAlive)
-                          {
-                              Thread.Sleep(1000);
-                          }
-                      StartSync(project, true);
+            //Thread autoSyncThread = new Thread(delegate ()
+            //  {
+            //      var projAuto = Projects.Where(x => x.AutoSync);//All autosync projects
+            //      if (projAuto.Count() == 0)
+            //      {
+            //          CONSTS.AddNewLine(tblog, "Nothing for autosync");
+            //          return;
+            //      }
+            //      CONSTS.AddNewLine(tblog, "For AutoSync " + projAuto.Count() + " projects");
+            //      foreach (var project in projAuto)
+            //      {
+            //          if (SyncThread != null)
+            //              while (IsRunningSync || SyncThread.IsAlive)
+            //              {
+            //                  Thread.Sleep(1000);
+            //              }
+            //          StartSync(project, true);
 
-                  }
-              });
-            autoSyncThread.Start();
+            //      }
+            //  });
+            //autoSyncThread.Start();
 
         }
 
@@ -693,7 +546,7 @@ namespace SyncFlash
                 {
                     SelectedDirPATH = GetRelationPath(SelectedDirPATH, DriveLette);
                 }
-                var Project = Projects.First(x => x.Name == selected.ToString());
+                var Project = GetSelectedProject();
                 CopyDIRSThread = new Thread(delegate ()
                 {
                     CONSTS.invokeProgress(progressBar1, 0);
@@ -765,12 +618,12 @@ namespace SyncFlash
             }
         }
 
-        private void обновитьСписокПроектовToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CheckBox1_CheckedChanged_1(object sender, EventArgs e)
         {
-            Projects = cfg.ReadAllProjects();
+
         }
 
-        private void CheckBox1_CheckedChanged_1(object sender, EventArgs e)
+        private void button1_Click_1(object sender, EventArgs e)
         {
 
         }

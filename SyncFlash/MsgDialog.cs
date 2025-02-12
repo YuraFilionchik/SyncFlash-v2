@@ -14,12 +14,14 @@ namespace SyncFlash
         public List<Queue> ReturnedQueue;
         public List<Queue> ExceptionsList = new List<Queue>();
         private bool AddExceptions = false;
+        private Project currentProject;
 
-        public MsgDialog(List<Queue> queues)
+        public MsgDialog(Project project, List<Queue> queues)
         {
             try
             {
                 InitializeComponent();
+                currentProject = project;
                 dgv.SelectionChanged += Dgv_SelectionChanged;
                 ReturnedQueue = queues;
                 //Fill datagridview
@@ -95,19 +97,14 @@ namespace SyncFlash
             {
                 //add exceptions
                 if (AddExceptions)
-                {
-                    var cfg =Form1.cfg; //manager of file config
-                    var Projects = cfg.ReadAllProjects();
-                    var pr = Projects.First(x => x.Alldirs.Any(c => c.Contains(ExceptionsList[0].SourceFileProjectDir))); //selected proj
+                {                    
                     foreach (Queue q in ExceptionsList)
                     {
                         string relpath = Form1.GetRelationPath(q.SourceFile, q.SourceFileProjectDir);
-                        if (pr.ExceptionDirs.Contains(relpath)) continue;
-                        pr.ExceptionDirs.Add(relpath);//добавление относительного пути
+                        if (currentProject.ExceptionDirs.Contains(relpath)) continue;
+                        currentProject.ExceptionDirs.Add(relpath);//добавление относительного пути
                         _ = ReturnedQueue.Remove(q);
                     }
-                    //save changes
-                    cfg.SaveProject(pr);
                 }
                 foreach (DataGridViewRow row in dgv.Rows) //Удаляем из очереди файлы, которые не отмечены
                 {
@@ -146,8 +143,9 @@ namespace SyncFlash
                 Queue selectedQueue = ReturnedQueue.First(x => x.Number == Number);
                 if (ExceptionsList.Contains(selectedQueue)) return;
                 ExceptionsList.Add(selectedQueue);
-
+                currentProject.ExceptionDirs.Add(Form1.GetRelationPath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));
                 AddExceptions = true;
+                
             }
             catch (Exception ex)
             {

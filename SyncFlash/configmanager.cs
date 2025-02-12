@@ -47,6 +47,7 @@ namespace SyncFlash
                 }
                 else//создаем новую строку
                 {
+                    if (control.Columns.Count == 0) return;
                     int lastrow = 0;
                     if (control.InvokeRequired)
                         control.Invoke(new MethodInvoker(delegate () { lastrow = control.Rows.Add(); }));

@@ -28,350 +28,412 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.List_Projects = new System.Windows.Forms.ListBox();
-            this.contextprojects = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.добавитьПроектToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.удалитьПроектToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.синхронизироватьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.переименоватьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.обновитьСписокПроектовToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.list_dirs = new System.Windows.Forms.ListView();
-            this.contextdirs = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.добавитьПапкуToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.удалитьПапкуToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.progressBar1 = new System.Windows.Forms.ProgressBar();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.listExceptions = new System.Windows.Forms.ListBox();
-            this.contextExceptions = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
-            this.label1 = new System.Windows.Forms.Label();
-            this.btSelectUSB = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.tblog = new System.Windows.Forms.DataGridView();
-            this.data = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
-            this.cbSilent = new System.Windows.Forms.CheckBox();
-            this.btLog = new System.Windows.Forms.Button();
-            this.contextprojects.SuspendLayout();
-            this.contextdirs.SuspendLayout();
-            this.contextExceptions.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.tblog)).BeginInit();
-            this.SuspendLayout();
+            List_Projects = new System.Windows.Forms.ListBox();
+            contextprojects = new System.Windows.Forms.ContextMenuStrip(components);
+            добавитьПроектToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            удалитьПроектToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            синхронизироватьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            переименоватьToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            list_dirs = new System.Windows.Forms.ListView();
+            contextdirs = new System.Windows.Forms.ContextMenuStrip(components);
+            добавитьПапкуToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            удалитьПапкуToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            копироватьЭтуПапкуВОстальныеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            progressBar1 = new System.Windows.Forms.ProgressBar();
+            checkBox1 = new System.Windows.Forms.CheckBox();
+            listExceptions = new System.Windows.Forms.ListBox();
+            contextExceptions = new System.Windows.Forms.ContextMenuStrip(components);
+            toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            label1 = new System.Windows.Forms.Label();
+            btSelectUSB = new System.Windows.Forms.Button();
+            button1 = new System.Windows.Forms.Button();
+            tblog = new System.Windows.Forms.DataGridView();
+            data = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            checkBox2 = new System.Windows.Forms.CheckBox();
+            cbSilent = new System.Windows.Forms.CheckBox();
+            btLog = new System.Windows.Forms.Button();
+            splitContainer1 = new System.Windows.Forms.SplitContainer();
+            splitContainer2 = new System.Windows.Forms.SplitContainer();
+            label2 = new System.Windows.Forms.Label();
+            contextprojects.SuspendLayout();
+            contextdirs.SuspendLayout();
+            contextExceptions.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)tblog).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+            splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.Panel2.SuspendLayout();
+            splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
+            splitContainer2.Panel1.SuspendLayout();
+            splitContainer2.Panel2.SuspendLayout();
+            splitContainer2.SuspendLayout();
+            SuspendLayout();
             // 
             // List_Projects
             // 
-            this.List_Projects.ContextMenuStrip = this.contextprojects;
-            this.List_Projects.FormattingEnabled = true;
-            this.List_Projects.Location = new System.Drawing.Point(3, 2);
-            this.List_Projects.Name = "List_Projects";
-            this.List_Projects.Size = new System.Drawing.Size(148, 147);
-            this.List_Projects.TabIndex = 0;
+            List_Projects.ContextMenuStrip = contextprojects;
+            List_Projects.Dock = System.Windows.Forms.DockStyle.Fill;
+            List_Projects.FormattingEnabled = true;
+            List_Projects.Location = new System.Drawing.Point(0, 0);
+            List_Projects.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            List_Projects.Name = "List_Projects";
+            List_Projects.Size = new System.Drawing.Size(409, 229);
+            List_Projects.TabIndex = 0;
             // 
             // contextprojects
             // 
-            this.contextprojects.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.добавитьПроектToolStripMenuItem,
-            this.удалитьПроектToolStripMenuItem,
-            this.синхронизироватьToolStripMenuItem,
-            this.переименоватьToolStripMenuItem,
-            this.обновитьСписокПроектовToolStripMenuItem});
-            this.contextprojects.Name = "contextprojects";
-            this.contextprojects.Size = new System.Drawing.Size(225, 114);
+            contextprojects.ImageScalingSize = new System.Drawing.Size(20, 20);
+            contextprojects.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { добавитьПроектToolStripMenuItem, удалитьПроектToolStripMenuItem, синхронизироватьToolStripMenuItem, переименоватьToolStripMenuItem });
+            contextprojects.Name = "contextprojects";
+            contextprojects.Size = new System.Drawing.Size(258, 100);
             // 
             // добавитьПроектToolStripMenuItem
             // 
-            this.добавитьПроектToolStripMenuItem.Name = "добавитьПроектToolStripMenuItem";
-            this.добавитьПроектToolStripMenuItem.Size = new System.Drawing.Size(224, 22);
-            this.добавитьПроектToolStripMenuItem.Text = "Добавить проект";
-            this.добавитьПроектToolStripMenuItem.Click += new System.EventHandler(this.добавитьПроектToolStripMenuItem_Click);
+            добавитьПроектToolStripMenuItem.Name = "добавитьПроектToolStripMenuItem";
+            добавитьПроектToolStripMenuItem.Size = new System.Drawing.Size(257, 24);
+            добавитьПроектToolStripMenuItem.Text = "Добавить проект";
+            добавитьПроектToolStripMenuItem.Click += добавитьПроектToolStripMenuItem_Click;
             // 
             // удалитьПроектToolStripMenuItem
             // 
-            this.удалитьПроектToolStripMenuItem.Name = "удалитьПроектToolStripMenuItem";
-            this.удалитьПроектToolStripMenuItem.Size = new System.Drawing.Size(224, 22);
-            this.удалитьПроектToolStripMenuItem.Text = "Удалить проект из списка";
-            this.удалитьПроектToolStripMenuItem.Click += new System.EventHandler(this.удалитьПроектToolStripMenuItem_Click);
+            удалитьПроектToolStripMenuItem.Name = "удалитьПроектToolStripMenuItem";
+            удалитьПроектToolStripMenuItem.Size = new System.Drawing.Size(257, 24);
+            удалитьПроектToolStripMenuItem.Text = "Удалить проект из списка";
+            удалитьПроектToolStripMenuItem.Click += удалитьПроектToolStripMenuItem_Click;
             // 
             // синхронизироватьToolStripMenuItem
             // 
-            this.синхронизироватьToolStripMenuItem.Name = "синхронизироватьToolStripMenuItem";
-            this.синхронизироватьToolStripMenuItem.Size = new System.Drawing.Size(224, 22);
-            this.синхронизироватьToolStripMenuItem.Text = "-=Синхронизировать=-";
-            this.синхронизироватьToolStripMenuItem.Click += new System.EventHandler(this.синхронизироватьToolStripMenuItem_Click);
+            синхронизироватьToolStripMenuItem.Name = "синхронизироватьToolStripMenuItem";
+            синхронизироватьToolStripMenuItem.Size = new System.Drawing.Size(257, 24);
+            синхронизироватьToolStripMenuItem.Text = "-=Синхронизировать=-";
+            синхронизироватьToolStripMenuItem.Click += синхронизироватьToolStripMenuItem_Click;
             // 
             // переименоватьToolStripMenuItem
             // 
-            this.переименоватьToolStripMenuItem.Name = "переименоватьToolStripMenuItem";
-            this.переименоватьToolStripMenuItem.Size = new System.Drawing.Size(224, 22);
-            this.переименоватьToolStripMenuItem.Text = "Переименовать...";
-            this.переименоватьToolStripMenuItem.Click += new System.EventHandler(this.переименоватьToolStripMenuItem_Click);
-            // 
-            // обновитьСписокПроектовToolStripMenuItem
-            // 
-            this.обновитьСписокПроектовToolStripMenuItem.Name = "обновитьСписокПроектовToolStripMenuItem";
-            this.обновитьСписокПроектовToolStripMenuItem.Size = new System.Drawing.Size(224, 22);
-            this.обновитьСписокПроектовToolStripMenuItem.Text = "Обновить список проектов";
-            this.обновитьСписокПроектовToolStripMenuItem.Click += new System.EventHandler(this.обновитьСписокПроектовToolStripMenuItem_Click);
+            переименоватьToolStripMenuItem.Name = "переименоватьToolStripMenuItem";
+            переименоватьToolStripMenuItem.Size = new System.Drawing.Size(257, 24);
+            переименоватьToolStripMenuItem.Text = "Переименовать...";
+            переименоватьToolStripMenuItem.Click += переименоватьToolStripMenuItem_Click;
             // 
             // list_dirs
             // 
-            this.list_dirs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.list_dirs.ContextMenuStrip = this.contextdirs;
-            this.list_dirs.HideSelection = false;
-            this.list_dirs.Location = new System.Drawing.Point(157, 2);
-            this.list_dirs.MultiSelect = false;
-            this.list_dirs.Name = "list_dirs";
-            this.list_dirs.Size = new System.Drawing.Size(368, 68);
-            this.list_dirs.TabIndex = 2;
-            this.list_dirs.UseCompatibleStateImageBehavior = false;
-            this.list_dirs.View = System.Windows.Forms.View.List;
+            list_dirs.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            list_dirs.ContextMenuStrip = contextdirs;
+            list_dirs.Location = new System.Drawing.Point(2, 31);
+            list_dirs.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            list_dirs.MultiSelect = false;
+            list_dirs.Name = "list_dirs";
+            list_dirs.Size = new System.Drawing.Size(645, 82);
+            list_dirs.TabIndex = 2;
+            list_dirs.UseCompatibleStateImageBehavior = false;
+            list_dirs.View = System.Windows.Forms.View.List;
             // 
             // contextdirs
             // 
-            this.contextdirs.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.добавитьПапкуToolStripMenuItem,
-            this.удалитьПапкуToolStripMenuItem,
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem});
-            this.contextdirs.Name = "contextdirs";
-            this.contextdirs.Size = new System.Drawing.Size(269, 70);
+            contextdirs.ImageScalingSize = new System.Drawing.Size(20, 20);
+            contextdirs.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { добавитьПапкуToolStripMenuItem, удалитьПапкуToolStripMenuItem, копироватьЭтуПапкуВОстальныеToolStripMenuItem });
+            contextdirs.Name = "contextdirs";
+            contextdirs.Size = new System.Drawing.Size(325, 76);
             // 
             // добавитьПапкуToolStripMenuItem
             // 
-            this.добавитьПапкуToolStripMenuItem.Name = "добавитьПапкуToolStripMenuItem";
-            this.добавитьПапкуToolStripMenuItem.Size = new System.Drawing.Size(268, 22);
-            this.добавитьПапкуToolStripMenuItem.Text = "Добавить папку";
-            this.добавитьПапкуToolStripMenuItem.Click += new System.EventHandler(this.добавитьПапкуToolStripMenuItem_Click);
+            добавитьПапкуToolStripMenuItem.Name = "добавитьПапкуToolStripMenuItem";
+            добавитьПапкуToolStripMenuItem.Size = new System.Drawing.Size(324, 24);
+            добавитьПапкуToolStripMenuItem.Text = "Добавить папку";
+            добавитьПапкуToolStripMenuItem.Click += добавитьПапкуToolStripMenuItem_Click;
             // 
             // удалитьПапкуToolStripMenuItem
             // 
-            this.удалитьПапкуToolStripMenuItem.Name = "удалитьПапкуToolStripMenuItem";
-            this.удалитьПапкуToolStripMenuItem.Size = new System.Drawing.Size(268, 22);
-            this.удалитьПапкуToolStripMenuItem.Text = "Удалить папку";
-            this.удалитьПапкуToolStripMenuItem.Click += new System.EventHandler(this.удалитьПапкуToolStripMenuItem_Click);
+            удалитьПапкуToolStripMenuItem.Name = "удалитьПапкуToolStripMenuItem";
+            удалитьПапкуToolStripMenuItem.Size = new System.Drawing.Size(324, 24);
+            удалитьПапкуToolStripMenuItem.Text = "Удалить папку";
+            удалитьПапкуToolStripMenuItem.Click += удалитьПапкуToolStripMenuItem_Click;
             // 
             // копироватьЭтуПапкуВОстальныеToolStripMenuItem
             // 
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem.Name = "копироватьЭтуПапкуВОстальныеToolStripMenuItem";
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem.Size = new System.Drawing.Size(268, 22);
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem.Text = "Копировать эту папку в остальные!";
-            this.копироватьЭтуПапкуВОстальныеToolStripMenuItem.Click += new System.EventHandler(this.копироватьЭтуПапкуВОстальныеToolStripMenuItem_Click);
+            копироватьЭтуПапкуВОстальныеToolStripMenuItem.Name = "копироватьЭтуПапкуВОстальныеToolStripMenuItem";
+            копироватьЭтуПапкуВОстальныеToolStripMenuItem.Size = new System.Drawing.Size(324, 24);
+            копироватьЭтуПапкуВОстальныеToolStripMenuItem.Text = "Копировать эту папку в остальные!";
+            копироватьЭтуПапкуВОстальныеToolStripMenuItem.Click += копироватьЭтуПапкуВОстальныеToolStripMenuItem_Click;
             // 
             // progressBar1
             // 
-            this.progressBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.progressBar1.Location = new System.Drawing.Point(0, 447);
-            this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(634, 23);
-            this.progressBar1.Step = 1;
-            this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.progressBar1.TabIndex = 4;
+            progressBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            progressBar1.Location = new System.Drawing.Point(0, 542);
+            progressBar1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            progressBar1.Name = "progressBar1";
+            progressBar1.Size = new System.Drawing.Size(1209, 35);
+            progressBar1.Step = 1;
+            progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            progressBar1.TabIndex = 4;
             // 
             // checkBox1
             // 
-            this.checkBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Checked = true;
-            this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox1.Location = new System.Drawing.Point(531, 2);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(77, 17);
-            this.checkBox1.TabIndex = 5;
-            this.checkBox1.Text = "OnlineOnly";
-            this.checkBox1.UseVisualStyleBackColor = true;
-            this.checkBox1.CheckedChanged += new System.EventHandler(this.CheckBox1_CheckedChanged_1);
+            checkBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            checkBox1.AutoSize = true;
+            checkBox1.Checked = true;
+            checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
+            checkBox1.Location = new System.Drawing.Point(1071, 3);
+            checkBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new System.Drawing.Size(104, 24);
+            checkBox1.TabIndex = 5;
+            checkBox1.Text = "OnlineOnly";
+            checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.CheckedChanged += CheckBox1_CheckedChanged_1;
             // 
             // listExceptions
             // 
-            this.listExceptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.listExceptions.ContextMenuStrip = this.contextExceptions;
-            this.listExceptions.FormattingEnabled = true;
-            this.listExceptions.Location = new System.Drawing.Point(157, 88);
-            this.listExceptions.Name = "listExceptions";
-            this.listExceptions.Size = new System.Drawing.Size(367, 56);
-            this.listExceptions.TabIndex = 7;
+            listExceptions.ContextMenuStrip = contextExceptions;
+            listExceptions.Dock = System.Windows.Forms.DockStyle.Bottom;
+            listExceptions.FormattingEnabled = true;
+            listExceptions.Location = new System.Drawing.Point(0, 145);
+            listExceptions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            listExceptions.Name = "listExceptions";
+            listExceptions.Size = new System.Drawing.Size(649, 84);
+            listExceptions.TabIndex = 7;
             // 
             // contextExceptions
             // 
-            this.contextExceptions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItem1,
-            this.toolStripMenuItem2});
-            this.contextExceptions.Name = "contextdirs";
-            this.contextExceptions.Size = new System.Drawing.Size(162, 48);
+            contextExceptions.ImageScalingSize = new System.Drawing.Size(20, 20);
+            contextExceptions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem1, toolStripMenuItem2 });
+            contextExceptions.Name = "contextdirs";
+            contextExceptions.Size = new System.Drawing.Size(190, 52);
             // 
             // toolStripMenuItem1
             // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(161, 22);
-            this.toolStripMenuItem1.Text = "Добавить папку";
-            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            toolStripMenuItem1.Name = "toolStripMenuItem1";
+            toolStripMenuItem1.Size = new System.Drawing.Size(189, 24);
+            toolStripMenuItem1.Text = "Добавить папку";
+            toolStripMenuItem1.Click += toolStripMenuItem1_Click;
             // 
             // toolStripMenuItem2
             // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(161, 22);
-            this.toolStripMenuItem2.Text = "Удалить папку";
-            this.toolStripMenuItem2.Click += new System.EventHandler(this.toolStripMenuItem2_Click);
+            toolStripMenuItem2.Name = "toolStripMenuItem2";
+            toolStripMenuItem2.Size = new System.Drawing.Size(189, 24);
+            toolStripMenuItem2.Text = "Удалить папку";
+            toolStripMenuItem2.Click += toolStripMenuItem2_Click;
             // 
             // label1
             // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(157, 73);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(73, 13);
-            this.label1.TabIndex = 8;
-            this.label1.Text = "Исключения:";
+            label1.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(4, 118);
+            label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(222, 20);
+            label1.TabIndex = 8;
+            label1.Text = "Исключить из синхронизации:";
             // 
             // btSelectUSB
             // 
-            this.btSelectUSB.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btSelectUSB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btSelectUSB.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.btSelectUSB.Location = new System.Drawing.Point(532, 59);
-            this.btSelectUSB.Name = "btSelectUSB";
-            this.btSelectUSB.Size = new System.Drawing.Size(102, 23);
-            this.btSelectUSB.TabIndex = 9;
-            this.btSelectUSB.Text = "Select USB drive...";
-            this.btSelectUSB.UseVisualStyleBackColor = true;
-            this.btSelectUSB.Click += new System.EventHandler(this.btSelectUSB_Click);
+            btSelectUSB.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btSelectUSB.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            btSelectUSB.Font = new System.Drawing.Font("Times New Roman", 8.25F);
+            btSelectUSB.Location = new System.Drawing.Point(1073, 91);
+            btSelectUSB.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btSelectUSB.Name = "btSelectUSB";
+            btSelectUSB.Size = new System.Drawing.Size(136, 35);
+            btSelectUSB.TabIndex = 9;
+            btSelectUSB.Text = "Select USB drive...";
+            btSelectUSB.UseVisualStyleBackColor = true;
+            btSelectUSB.Click += btSelectUSB_Click;
             // 
             // button1
             // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.BackColor = System.Drawing.Color.Aqua;
-            this.button1.FlatAppearance.BorderColor = System.Drawing.Color.Blue;
-            this.button1.FlatAppearance.BorderSize = 4;
-            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button1.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.button1.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.button1.Location = new System.Drawing.Point(532, 87);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(97, 56);
-            this.button1.TabIndex = 10;
-            this.button1.Text = "StartSync";
-            this.button1.UseVisualStyleBackColor = false;
-            this.button1.Click += new System.EventHandler(this.button1_Click_1);
+            button1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            button1.BackColor = System.Drawing.Color.Aqua;
+            button1.FlatAppearance.BorderColor = System.Drawing.Color.Blue;
+            button1.FlatAppearance.BorderSize = 4;
+            button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            button1.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold);
+            button1.ForeColor = System.Drawing.SystemColors.ControlText;
+            button1.Location = new System.Drawing.Point(1073, 134);
+            button1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            button1.Name = "button1";
+            button1.Size = new System.Drawing.Size(129, 86);
+            button1.TabIndex = 10;
+            button1.Text = "StartSync";
+            button1.UseVisualStyleBackColor = false;
+            button1.Click += button1_Click_1;
             // 
             // tblog
             // 
-            this.tblog.AllowUserToAddRows = false;
-            this.tblog.AllowUserToDeleteRows = false;
-            this.tblog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tblog.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
-            this.tblog.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
-            this.tblog.BackgroundColor = System.Drawing.SystemColors.Control;
-            this.tblog.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.tblog.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
-            this.tblog.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            this.tblog.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.tblog.ColumnHeadersVisible = false;
-            this.tblog.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.data});
+            tblog.AllowUserToAddRows = false;
+            tblog.AllowUserToDeleteRows = false;
+            tblog.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
+            tblog.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
+            tblog.BackgroundColor = System.Drawing.SystemColors.Control;
+            tblog.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            tblog.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
+            tblog.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            tblog.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            tblog.ColumnHeadersVisible = false;
+            tblog.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { data });
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.ControlText;
             dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
             dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.tblog.DefaultCellStyle = dataGridViewCellStyle1;
-            this.tblog.EnableHeadersVisualStyles = false;
-            this.tblog.Location = new System.Drawing.Point(3, 156);
-            this.tblog.Name = "tblog";
-            this.tblog.ReadOnly = true;
-            this.tblog.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            this.tblog.RowHeadersVisible = false;
+            tblog.DefaultCellStyle = dataGridViewCellStyle1;
+            tblog.Dock = System.Windows.Forms.DockStyle.Fill;
+            tblog.EnableHeadersVisualStyles = false;
+            tblog.Location = new System.Drawing.Point(0, 0);
+            tblog.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            tblog.Name = "tblog";
+            tblog.ReadOnly = true;
+            tblog.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            tblog.RowHeadersVisible = false;
+            tblog.RowHeadersWidth = 51;
             dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold);
             dataGridViewCellStyle2.ForeColor = System.Drawing.Color.Navy;
-            this.tblog.RowsDefaultCellStyle = dataGridViewCellStyle2;
-            this.tblog.RowTemplate.DefaultCellStyle.BackColor = System.Drawing.SystemColors.Control;
-            this.tblog.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.tblog.RowTemplate.DefaultCellStyle.ForeColor = System.Drawing.Color.Navy;
-            this.tblog.RowTemplate.Height = 10;
-            this.tblog.RowTemplate.ReadOnly = true;
-            this.tblog.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.tblog.Size = new System.Drawing.Size(626, 285);
-            this.tblog.TabIndex = 11;
+            tblog.RowsDefaultCellStyle = dataGridViewCellStyle2;
+            tblog.RowTemplate.DefaultCellStyle.BackColor = System.Drawing.SystemColors.Control;
+            tblog.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold);
+            tblog.RowTemplate.DefaultCellStyle.ForeColor = System.Drawing.Color.Navy;
+            tblog.RowTemplate.Height = 10;
+            tblog.RowTemplate.ReadOnly = true;
+            tblog.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            tblog.Size = new System.Drawing.Size(1063, 307);
+            tblog.TabIndex = 11;
             // 
             // data
             // 
-            this.data.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.data.HeaderText = "data";
-            this.data.Name = "data";
-            this.data.ReadOnly = true;
+            data.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            data.HeaderText = "data";
+            data.MinimumWidth = 6;
+            data.Name = "data";
+            data.ReadOnly = true;
             // 
             // checkBox2
             // 
-            this.checkBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Location = new System.Drawing.Point(531, 20);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(72, 17);
-            this.checkBox2.TabIndex = 12;
-            this.checkBox2.Text = "AutoSync";
-            this.checkBox2.UseVisualStyleBackColor = true;
-            this.checkBox2.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
+            checkBox2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            checkBox2.AutoSize = true;
+            checkBox2.Location = new System.Drawing.Point(1075, 31);
+            checkBox2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            checkBox2.Name = "checkBox2";
+            checkBox2.Size = new System.Drawing.Size(93, 24);
+            checkBox2.TabIndex = 12;
+            checkBox2.Text = "AutoSync";
+            checkBox2.UseVisualStyleBackColor = true;
+            checkBox2.CheckedChanged += checkBox2_CheckedChanged;
             // 
             // cbSilent
             // 
-            this.cbSilent.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.cbSilent.AutoSize = true;
-            this.cbSilent.Location = new System.Drawing.Point(531, 38);
-            this.cbSilent.Name = "cbSilent";
-            this.cbSilent.Size = new System.Drawing.Size(93, 17);
-            this.cbSilent.TabIndex = 13;
-            this.cbSilent.Text = "Тихий режим";
-            this.cbSilent.UseVisualStyleBackColor = true;
+            cbSilent.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            cbSilent.AutoSize = true;
+            cbSilent.Location = new System.Drawing.Point(1071, 58);
+            cbSilent.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            cbSilent.Name = "cbSilent";
+            cbSilent.Size = new System.Drawing.Size(125, 24);
+            cbSilent.TabIndex = 13;
+            cbSilent.Text = "Тихий режим";
+            cbSilent.UseVisualStyleBackColor = true;
             // 
             // btLog
             // 
-            this.btLog.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btLog.Location = new System.Drawing.Point(609, 2);
-            this.btLog.Name = "btLog";
-            this.btLog.Size = new System.Drawing.Size(24, 23);
-            this.btLog.TabIndex = 14;
-            this.btLog.Text = "->";
-            this.btLog.UseVisualStyleBackColor = true;
-            this.btLog.Click += new System.EventHandler(this.btLog_Click);
+            btLog.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            btLog.Location = new System.Drawing.Point(1176, 3);
+            btLog.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            btLog.Name = "btLog";
+            btLog.Size = new System.Drawing.Size(32, 35);
+            btLog.TabIndex = 14;
+            btLog.Text = "->";
+            btLog.UseVisualStyleBackColor = true;
+            btLog.Click += btLog_Click;
+            // 
+            // splitContainer1
+            // 
+            splitContainer1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            splitContainer1.Location = new System.Drawing.Point(0, 0);
+            splitContainer1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            splitContainer1.Name = "splitContainer1";
+            splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer1.Panel1
+            // 
+            splitContainer1.Panel1.Controls.Add(splitContainer2);
+            // 
+            // splitContainer1.Panel2
+            // 
+            splitContainer1.Panel2.Controls.Add(tblog);
+            splitContainer1.Size = new System.Drawing.Size(1063, 542);
+            splitContainer1.SplitterDistance = 229;
+            splitContainer1.SplitterWidth = 6;
+            splitContainer1.TabIndex = 15;
+            // 
+            // splitContainer2
+            // 
+            splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
+            splitContainer2.Location = new System.Drawing.Point(0, 0);
+            splitContainer2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            splitContainer2.Name = "splitContainer2";
+            // 
+            // splitContainer2.Panel1
+            // 
+            splitContainer2.Panel1.Controls.Add(List_Projects);
+            // 
+            // splitContainer2.Panel2
+            // 
+            splitContainer2.Panel2.Controls.Add(label2);
+            splitContainer2.Panel2.Controls.Add(label1);
+            splitContainer2.Panel2.Controls.Add(list_dirs);
+            splitContainer2.Panel2.Controls.Add(listExceptions);
+            splitContainer2.Size = new System.Drawing.Size(1063, 229);
+            splitContainer2.SplitterDistance = 409;
+            splitContainer2.SplitterWidth = 5;
+            splitContainer2.TabIndex = 9;
+            // 
+            // label2
+            // 
+            label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            label2.AutoSize = true;
+            label2.Location = new System.Drawing.Point(3, 6);
+            label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label2.Name = "label2";
+            label2.Size = new System.Drawing.Size(215, 20);
+            label2.TabIndex = 8;
+            label2.Text = "Объекты для синхронизации:";
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(634, 470);
-            this.Controls.Add(this.btLog);
-            this.Controls.Add(this.cbSilent);
-            this.Controls.Add(this.checkBox2);
-            this.Controls.Add(this.tblog);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.btSelectUSB);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.listExceptions);
-            this.Controls.Add(this.checkBox1);
-            this.Controls.Add(this.progressBar1);
-            this.Controls.Add(this.list_dirs);
-            this.Controls.Add(this.List_Projects);
-            this.Name = "Form1";
-            this.Text = "SyncFlash";
-            this.Load += new System.EventHandler(this.Form1_Load);
-            this.contextprojects.ResumeLayout(false);
-            this.contextdirs.ResumeLayout(false);
-            this.contextExceptions.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.tblog)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(1209, 577);
+            Controls.Add(splitContainer1);
+            Controls.Add(btLog);
+            Controls.Add(cbSilent);
+            Controls.Add(checkBox2);
+            Controls.Add(button1);
+            Controls.Add(btSelectUSB);
+            Controls.Add(checkBox1);
+            Controls.Add(progressBar1);
+            Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            Name = "Form1";
+            Text = "SyncFlash";
+            Load += Form1_Load;
+            contextprojects.ResumeLayout(false);
+            contextdirs.ResumeLayout(false);
+            contextExceptions.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)tblog).EndInit();
+            splitContainer1.Panel1.ResumeLayout(false);
+            splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
+            splitContainer1.ResumeLayout(false);
+            splitContainer2.Panel1.ResumeLayout(false);
+            splitContainer2.Panel2.ResumeLayout(false);
+            splitContainer2.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
+            splitContainer2.ResumeLayout(false);
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -401,7 +463,9 @@
         private System.Windows.Forms.CheckBox cbSilent;
         private System.Windows.Forms.Button btLog;
         private System.Windows.Forms.ToolStripMenuItem копироватьЭтуПапкуВОстальныеToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem обновитьСписокПроектовToolStripMenuItem;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.SplitContainer splitContainer2;
+        private System.Windows.Forms.Label label2;
     }
 }
 

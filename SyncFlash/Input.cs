@@ -12,6 +12,7 @@ namespace SyncFlash
     public partial class Input : Form
     {
         private string text = "";
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string TEXT
         {
             get
@@ -38,6 +39,7 @@ namespace SyncFlash
 
         private void button1_Click(object sender, EventArgs e)
         {
+            folderBrowserDialog1.SelectedPath = TEXT;
             var dr = folderBrowserDialog1.ShowDialog();
             if (dr == DialogResult.OK) TEXT = folderBrowserDialog1.SelectedPath;
             textBox1.Focus();

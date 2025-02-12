@@ -1,20 +1,54 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using filesdates = System.Collections.Generic.Dictionary<string, System.DateTime>;
 
 namespace SyncFlash
 {
-public    class Project
+public    class Project : INotifyPropertyChanged
     {
         private MyTimer timer = new MyTimer(Form1.log);
         public List<Projdir> AllProjectDirs; //список всех папок для синхронизации
         private List<Projdir> onlineDirs = new List<Projdir>();
         public List<string> ExceptionDirs; //папки исключения
+        private string _name;
+        private DateTime? _lastSyncTime;
+        private long _lastSyncSize;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                OnPropertyChanged(nameof(Name));
+            }
+        }
+        public bool AutoSync { get; set; } 
+        
+        // Последняя успешная синхронизация
+        public DateTime? LastSyncTime { 
+            get => _lastSyncTime;
+            set 
+            {
+                _lastSyncTime = value;
+                OnPropertyChanged(nameof(LastSyncTime));
+            } }
+        public long LastSyncSize { 
+            get => _lastSyncSize;
+            set
+            {
+                _lastSyncSize = value;
+                OnPropertyChanged(nameof(LastSyncSize));
+            } } // Размер проекта в байтах при последней синхронизации
         public List<Projdir> OnlineDirs//доступные сейчас
         {
             get
@@ -30,6 +64,27 @@ public    class Project
                 }
             }
         }
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public override string ToString()
+        {
+            string syncTime = LastSyncTime?.ToString("yyyy-MM-dd HH:mm") ?? "Не синхронизирован";
+            string size = FormatSize(LastSyncSize);
+            return $"{Name} | {syncTime} | {size}";
+        }
+
+        private string FormatSize(long bytes)
+        {
+            if (bytes < 1024) return $"{bytes} B";
+            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F2} kB";
+            if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F2} MB";
+            return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        }
+
         public List<string> Alldirs
         {
             get
@@ -43,12 +98,7 @@ public    class Project
             }
         }
 
-        public bool AutoSync;
-        public string Name;
-        public override string ToString()
-        {
-            return Name;
-        }
+       
         public Project(string name)
         {
             this.Name = name;
@@ -161,6 +211,7 @@ public    class Project
         private filesdates _allfiles;
 
         private DateTime DefaultDate = new DateTime(2000, 1, 1);
+
         public Projdir(string dir, Project project)
         {
             Dir = dir;
@@ -202,70 +253,54 @@ public    class Project
         /// <summary>
         /// Dictionary<files,datetime last write> всех файлов в Projdir
         /// </summary>
-        public filesdates AllFiles()
+        public filesdates AllFiles(bool useCache=true)
         {
-            filesdates res = new filesdates();
-            if (!IsOnline)  return res; 
-            string[] AllFiles;
-            if (_allfiles == null)
+            if (_allfiles != null && useCache) return _allfiles; // Используем кэш, если данные уже загружены
+
+            var res = new filesdates();
+            if (!IsOnline) return res; // Если папка оффлайн, возвращаем пустой список
+
+            try
             {
-                tmr.Start("===GetFilesInDir = " + Dir, 22);
-               // CONSTS.AddToTempLine("Получение файлов из " + Dir);
-                AllFiles = GetfilesIndir(Dir); //запуск поиска всех файлов директории проекта
-                tmr.Stop(22);
+                // Храним исключенные пути как относительные
+                var exceptionPaths = new HashSet<string>(
+                    FromProject.ExceptionDirs.Where(e => !e.Contains("*")),
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+                // Отдельно храним шаблоны (*.bak, *.tmp и т. д.)
+                var exceptionPatterns = FromProject.ExceptionDirs.Where(e => e.Contains("*")).ToList();
+
+                foreach (var file in Directory.EnumerateFiles(Dir, "*", SearchOption.AllDirectories))
+                {
+                    // Получаем относительный путь файла внутри папки проекта
+                    string relativePath = Form1.GetRelationPath(file, Dir);
+
+                    // Проверяем, не находится ли файл в исключениях (сравниваем относительный путь)
+                    if (exceptionPaths.Contains(relativePath))
+                        continue;
+
+                    // Проверяем, подпадает ли файл под шаблон (*.bak, *.tmp)
+                    if (exceptionPatterns.Any(pattern => MatchesPattern(relativePath, pattern)))
+                        continue;
+
+                    res[file] = File.GetLastWriteTime(file);
+                }
             }
-            else return _allfiles;
-            var n = AllFiles.Count();
-            //tmr.Stop(22);
-            // tmr.Start("Перевод в структуру filesdates ",23);
-            foreach (var file in AllFiles)
-            {
-                res.Add(file, File.GetLastWriteTime(file));
-            }
-            // tmr.Stop(23);
-            _allfiles = res;
+            catch (Exception) { return res; } // Обрабатываем возможные ошибки доступа к файлам
+
+            _allfiles = res; // Кэшируем результат
             return res;
 
         }
-        public void ReadFiles()
+
+        private bool MatchesPattern(string filePath, string pattern)
         {
-
-            filesdates res = new filesdates();
-
-            string[] AllFiles;
-
-            AllFiles = GetfilesIndir(Dir); //запуск поиска всех файлов директории проекта
-
-            foreach (var file in AllFiles)
-            {
-                res.Add(file, File.GetLastWriteTime(file));
-            }
-
-            _allfiles = res;
+            string fileName = Path.GetFileName(filePath);
+            return Regex.IsMatch(fileName, "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$", RegexOptions.IgnoreCase);
         }
-        private string[] GetfilesIndir(string dir)
-        {
-            
-            string relativeDir = dir.Contains(":\\") ? Form1.GetRelationPath(dir, this.Dir) : dir;//относительный путь
-            var result = new string[0];
-            if (FromProject.ExceptionDirs.Contains(relativeDir))//filter by ExceptionDirs
-            {  return result; }
-            if (Directory.GetDirectories(dir).Count() == 0)
-            { return Directory.GetFiles(dir); }//file in root dir
 
-            else
-            {
-                result = result.Concat(Directory.GetFiles(dir)).ToArray();
-                foreach (var D in Directory.GetDirectories(dir))
-                {
-                   
-                    result = result.Concat(GetfilesIndir(D)).ToArray();
-                    
-                }
-            }
-           
-            return result;
-        }
+
         /// <summary>
         /// Показывает время подификации самого нового файла в папке Dir и одной подпапке внутрь
         /// </summary>

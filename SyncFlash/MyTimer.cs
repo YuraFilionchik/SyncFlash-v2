@@ -31,7 +31,9 @@ namespace SyncFlash
             Name = name;
         }
         public void Start(string name, int id)
-        {if (!log.Visible) return;
+        {
+            if (log is null) return;
+            if (!log.Visible) return;
             if (startID.Any(x => x.id == id)) return;
             startID.Add(new StartID
             {
@@ -44,6 +46,7 @@ namespace SyncFlash
         //return name and duration of operation
         public string Stop()
         {
+            if (log is null) return "";
             if (!log.Visible) return "";
             var dt = DateTime.Now - start; //time of operation
             if (dt.TotalMilliseconds < MinDuration) return "";
