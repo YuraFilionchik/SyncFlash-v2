@@ -59,6 +59,7 @@
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             splitContainer2 = new System.Windows.Forms.SplitContainer();
             label2 = new System.Windows.Forms.Label();
+            folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             contextprojects.SuspendLayout();
             contextdirs.SuspendLayout();
             contextExceptions.SuspendLayout();
@@ -127,7 +128,7 @@
             list_dirs.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             list_dirs.MultiSelect = false;
             list_dirs.Name = "list_dirs";
-            list_dirs.Size = new System.Drawing.Size(645, 82);
+            list_dirs.Size = new System.Drawing.Size(644, 82);
             list_dirs.TabIndex = 2;
             list_dirs.UseCompatibleStateImageBehavior = false;
             list_dirs.View = System.Windows.Forms.View.List;
@@ -402,6 +403,10 @@
             label2.TabIndex = 8;
             label2.Text = "Объекты для синхронизации:";
             // 
+            // folderBrowserDialog1
+            // 
+            folderBrowserDialog1.RootFolder = System.Environment.SpecialFolder.MyComputer;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -466,6 +471,7 @@
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.Label label2;
+        public System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
     }
 }
 

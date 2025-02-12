@@ -23,6 +23,8 @@ namespace SyncFlash
         private readonly IFileSyncService _fileSyncService;
         private readonly IConfigService _configService;
         private readonly IProgress<string> _progress;
+        private readonly IProgress<int> _progressBar;
+
         private CancellationTokenSource _syncCancellationTokenSource;
 
         Thread SyncThread; 
@@ -34,7 +36,17 @@ namespace SyncFlash
             InitializeComponent();
             _fileSyncService = new FileSyncService();
             _configService = new ConfigService(cfg_file);
-            _progress = new Progress<string>(message => CONSTS.AddNewLine(tblog, message));
+
+            _progress = new Progress<string>(message => 
+            {
+                CONSTS.AddNewLine(tblog, message);
+            });
+
+            _progressBar = new Progress<int>(message =>
+            {
+                CONSTS.invokeProgress(progressBar1, message);
+            });
+
             Projects = _configService.GetProjects();
             log = new LogForm();
             tmr = new MyTimer(log);
@@ -204,7 +216,7 @@ namespace SyncFlash
                 return;
             }
 
-            await _fileSyncService.SyncFilesAsync(selectedFiles, _progress, cancellationToken);
+            await _fileSyncService.SyncFilesAsync(selectedFiles, _progress, _progressBar, cancellationToken);
 
             // Обновляем данные проекта после успешной синхронизации
             project.LastSyncTime = DateTime.Now;
@@ -352,21 +364,21 @@ namespace SyncFlash
         }
         private void добавитьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Input input = new Input();
-            input.ShowDialog();
             var selected = List_Projects.SelectedItem;
-            string inputDir = input.TEXT.TrimEnd('\\');
-            if (string.IsNullOrWhiteSpace(input.TEXT) ||
+            var dr = folderBrowserDialog1.ShowDialog();
+            if (dr != DialogResult.OK) return;
+            string inputDir = folderBrowserDialog1.SelectedPath.TrimEnd('\\');
+            if (string.IsNullOrWhiteSpace(inputDir) ||
                 list_dirs.Items.Contains(new ListViewItem(inputDir)) ||
                 selected == null) return;
 
             list_dirs.Items.Add(inputDir);
             var p = GetSelectedProject();
-            var lette = input.TEXT.Split('\\')[0];
+            var lette = inputDir.Split('\\')[0];
             if (lette == DriveLette)
             {//removable disk
-                string dir = input.TEXT.TrimEnd('\\').Substring(lette.Length);
-                p.AllProjectDirs.Add(new Projdir(dir, p, CONSTS.FlashDrive));
+                string flashDriveDir = inputDir.TrimEnd('\\').Substring(lette.Length);
+                p.AllProjectDirs.Add(new Projdir(flashDriveDir, p, CONSTS.FlashDrive));
             }
             else //HDD disk
             {

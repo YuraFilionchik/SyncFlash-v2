@@ -10,7 +10,7 @@ namespace SyncFlash.Services
     public interface IFileSyncService
     {
         Task<List<Queue>> AnalyzeFilesAsync(Project project);
-        Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress, CancellationToken cancellationToken);
+        Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress,IProgress<int> progressbar, CancellationToken cancellationToken);
     }
 
     public class FileSyncService : IFileSyncService
@@ -76,25 +76,25 @@ namespace SyncFlash.Services
         }
 
 
-        public async Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress, CancellationToken cancellationToken)
+        public async Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress, IProgress<int> progressbar, CancellationToken cancellationToken)
         {
+            int errors = 0;
             foreach (var file in queue)
             {
                 cancellationToken.ThrowIfCancellationRequested(); // Прерывание при отмене
-
+                progressbar.Report(queue.IndexOf(file) + 1);
                 progress.Report($"Copying: {file.SourceFile} -> {file.TargetFile}");
 
                 try
                 {
                     await Task.Run(() => File.Copy(file.SourceFile, file.TargetFile, true), cancellationToken);
-                    progress.Report($"+");
                 }
                 catch (System.IO.DirectoryNotFoundException ex)
                 {
                     Directory.CreateDirectory(Directory.GetParent(file.TargetFile).ToString());
                     await Task.Run(() => File.Copy(file.SourceFile, file.TargetFile, true), cancellationToken);
 
-                    progress.Report($"Created directory {Directory.GetParent(file.TargetFile).ToString()}");
+                    progress.Report($"Created directory {Directory.GetParent(file.TargetFile)}");
                 }
                 catch (Exception ex)
                 {
@@ -103,6 +103,7 @@ namespace SyncFlash.Services
             }
 
             progress.Report("Sync completed!");
+            progressbar.Report(100);
         }
 
     }
