@@ -78,7 +78,7 @@ namespace SyncFlash.Services
                     {
                 // Если папка на флешке, сохраняем путь без буквы диска
                 string pathToSave = (dir.PC_Name == CONSTS.FlashDrive)
-                            ? Form1.GetRelationPath(dir.Dir, CONSTS.GetDriveLetter()) // Оставляем относительный путь
+                            ? Form1.GetRelativePath(dir.Dir, CONSTS.GetDriveLetter()) // Оставляем относительный путь
                             : dir.Dir; // Полный путь для папок на ПК
 
                 return new XElement("Directory",

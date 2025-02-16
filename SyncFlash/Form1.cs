@@ -2,11 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -19,7 +17,7 @@ namespace SyncFlash
         public const string cfg_file = "conf.ini";
         string pc_name = Environment.MachineName;
         BindingList<Project> Projects = new BindingList<Project>();
-        private bool IsRunningSync=false; // if sync is running
+        private bool IsRunningSync = false; // if sync is running
         private readonly IFileSyncService _fileSyncService;
         private readonly IConfigService _configService;
         private readonly IProgress<string> _progress;
@@ -27,17 +25,18 @@ namespace SyncFlash
 
         private CancellationTokenSource _syncCancellationTokenSource;
 
-        Thread SyncThread; 
+        Thread SyncThread;
         Thread CopyDIRSThread; //процесс принудительного копирования папки
         MyTimer tmr;
         public static LogForm log;
+
         public Form1()
         { //TODO SYNC SOME PROJECTS 
             InitializeComponent();
             _fileSyncService = new FileSyncService();
             _configService = new ConfigService(cfg_file);
 
-            _progress = new Progress<string>(message => 
+            _progress = new Progress<string>(message =>
             {
                 CONSTS.AddNewLine(tblog, message);
             });
@@ -66,6 +65,7 @@ namespace SyncFlash
 
 
         #region Events Handlers
+
         /// <summary>
         /// открытие папки по двойному клику
         /// </summary>
@@ -73,7 +73,7 @@ namespace SyncFlash
         /// <param name="e"></param>
         private void List_dirs_DoubleClick(object sender, EventArgs e)
         {
-            string selectedDir = "";
+            string selectedDir = string.Empty;
             try
             {
                 if (list_dirs.SelectedItems.Count == 0) return;
@@ -130,17 +130,57 @@ namespace SyncFlash
             DisplayDirs();
         }
 
-
         //select project
         private void List_Projects_SelectedIndexChanged(object sender, EventArgs e)
         {
             DisplayDirs();
         }
-        private void Form1_Load(object sender, EventArgs e)
+        private async void Form1_Load(object sender, EventArgs e)
         {
             DisplayDirs();
+            foreach (var project in Projects)
+            {
+                if (project.AutoSync)
+                {
+                    await StartSync(project, true);
+                }
+            }   
         }
 
+        private async Task StartSync(Project project, bool isSilent)
+        {
+            // Меняем текст кнопки на "Остановить синхронизацию"
+            button1.Text = CONSTS.btSyncText2;
+
+            _syncCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _syncCancellationTokenSource.Token;
+
+            try
+            {
+                // Этап 1: Анализ файлов
+                var selectedFiles = await AnalyzeProjectAsync(project, isSilent);
+                if (selectedFiles == null)
+                {
+                    button1.Text = CONSTS.btSyncText1; // Вернуть текст кнопки, если анализ не дал результатов
+                    return;
+                }
+
+                // Этап 2: Синхронизация файлов
+                await SyncSelectedFilesAsync(project, selectedFiles, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Синхронизация прервана пользователем.");
+            }
+            finally
+            {
+                button1.Text = CONSTS.btSyncText1; // Возвращаем кнопку в исходное состояние
+                _syncCancellationTokenSource = null;
+            }
+        }
+
+
+        //Start syncronization
         private async void button1_Click(object sender, EventArgs e)
         {
             // Если уже идет синхронизация – отменяем её
@@ -155,46 +195,21 @@ namespace SyncFlash
             var selectedProject = GetSelectedProject();
             if (selectedProject == null) return;
 
-            // Меняем текст кнопки на "Остановить синхронизацию"
-            button1.Text = CONSTS.btSyncText2;
-
-            _syncCancellationTokenSource = new CancellationTokenSource();
-            var cancellationToken = _syncCancellationTokenSource.Token;
-
-            try
-            {
-                // Этап 1: Анализ файлов
-                var selectedFiles = await AnalyzeProjectAsync(selectedProject);
-                if (selectedFiles == null)
-                {
-                    button1.Text = CONSTS.btSyncText1; // Вернуть текст кнопки, если анализ не дал результатов
-                    return;
-                }
-
-                // Этап 2: Синхронизация файлов
-                await SyncSelectedFilesAsync(selectedProject, selectedFiles, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show("Синхронизация прервана пользователем.");
-            }
-            finally
-            {
-                button1.Text = CONSTS.btSyncText1; // Возвращаем кнопку в исходное состояние
-                _syncCancellationTokenSource = null;
-            }
+           await StartSync(selectedProject, false);
 
         }
 
-        private async Task<List<Queue>> AnalyzeProjectAsync(Project project)
+        private async Task<List<Queue>> AnalyzeProjectAsync(Project project, bool isSilent)
         {
             var queue = await _fileSyncService.AnalyzeFilesAsync(project);
 
             if (queue.Count == 0)
             {
-                MessageBox.Show("Все папки одинаковые, нечего синхронизировать.");
+                if (!isSilent)
+                    MessageBox.Show("Все папки одинаковые, нечего синхронизировать.");
                 return null;
             }
+            if (cbSilent.Checked || isSilent) return queue; // Если включен тихий режим, то не показываем окно выбора файлов
 
             // Открываем окно для выбора файлов пользователем
             using (var msgBox = new MsgDialog(project, queue))
@@ -207,7 +222,6 @@ namespace SyncFlash
             return queue; // Возвращаем отфильтрованный пользователем список файлов
         }
 
-       
         private async Task SyncSelectedFilesAsync(Project project, List<Queue> selectedFiles, CancellationToken cancellationToken)
         {
             if (selectedFiles == null || selectedFiles.Count == 0)
@@ -215,17 +229,17 @@ namespace SyncFlash
                 MessageBox.Show("Не выбраны файлы для синхронизации.");
                 return;
             }
-
+            _progress.Report("+++++++++++++++++++++++++++++++++++++++++++++++");
+            _progress.Report($"{project.Name} - synchronization started");
             await _fileSyncService.SyncFilesAsync(selectedFiles, _progress, _progressBar, cancellationToken);
 
             // Обновляем данные проекта после успешной синхронизации
             project.LastSyncTime = DateTime.Now;
             project.LastSyncSize = GetProjectSize(project);
-
+            _progress.Report($"{project.Name} - synchronization completed");
+            _progress.Report("==============================================");
             SaveAllProjects();
         }
-
-
 
         private long GetProjectSize(Project project)
         {
@@ -272,15 +286,15 @@ namespace SyncFlash
         #endregion
 
 
-       
-        
+
+
         /// <summary>
         /// Выделяет одинаковую часть пусти для файлов одного проекта
         /// </summary>
         /// <param name="fullpath"></param>
         /// <param name="projDir"></param>
         /// <returns></returns>
-        public static string GetRelationPath(string fullpath, string projDir)
+        public static string GetRelativePath(string fullpath, string projDir)
         {
             string result = fullpath.Remove(0, projDir.Length);
             return result;
@@ -315,7 +329,7 @@ namespace SyncFlash
 
         private void SaveAllProjects()
         {
-           if (!_configService.SaveProjects(Projects)) _progress.Report("Error saving list of projects");
+            if (!_configService.SaveProjects(Projects)) _progress.Report("Error saving list of projects");
 
         }
 
@@ -328,7 +342,7 @@ namespace SyncFlash
                 {
                     string projectName = dialog.ProjectName;
 
-                    if (Projects.Any(x=>x.Name == projectName))
+                    if (Projects.Any(x => x.Name == projectName))
                     {
                         MessageBox.Show("Такой проект уже существует!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
@@ -349,7 +363,7 @@ namespace SyncFlash
             var dr = inputDialog.ShowDialog();
             if (dr != DialogResult.OK) return;
             var newName = inputDialog.ProjectName;
-            if (Projects.Any(c=>c.Name == newName))
+            if (Projects.Any(c => c.Name == newName))
             {
                 MessageBox.Show("Такое имя уже есть в списке.");
                 return;
@@ -385,7 +399,7 @@ namespace SyncFlash
                 p.AllProjectDirs.Add(new Projdir(inputDir, p));
             }
             p.OnlineDirs.Clear();
-           SaveAllProjects();
+            SaveAllProjects();
         }
 
         private void удалитьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
@@ -400,7 +414,7 @@ namespace SyncFlash
             //    DirRemove = GetRelationPath(DirRemove, DriveLette);
             //}
             var proj = GetSelectedProject();
-            if (proj!=null)proj.RemoveDir(DirRemove);
+            if (proj != null) proj.RemoveDir(DirRemove);
             list_dirs.Items.Remove(selectedDirs[0]);
             proj.OnlineDirs.Clear();
             SaveAllProjects();
@@ -417,60 +431,154 @@ namespace SyncFlash
         //Add Except Dir
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            var selected = List_Projects.SelectedItem;//selected project in List
-            if (selected == null) return;
-            string selectedDir; //Selected directory into project
-            if (list_dirs.SelectedItems.Count == 0)
-            {
-                if (list_dirs.Items.Count != 0)
-                    selectedDir = list_dirs.Items[0].Text;
-                else
-                    selectedDir = Environment.CurrentDirectory;
-            }
+            var selectedProject = GetSelectedProject();
+            if (selectedProject == null) return;
+            string dir; //Selected directory into project
+
+            if (list_dirs.Items.Count != 0)
+                dir = list_dirs.Items[0].Text;
             else
             {
-                selectedDir = list_dirs.SelectedItems[0].Text;
+                MessageBox.Show("Добавьте папки в проект");
+                return;
             }
-    
-            Input input = new Input();
-            input.TEXT = selectedDir;
-            var dg = input.ShowDialog();
-            if (dg != DialogResult.OK) return;
-            if (string.IsNullOrWhiteSpace(input.TEXT) ||
-                listExceptions.Items.Contains(input.TEXT)) return;
-            var pr = GetSelectedProject();
 
-            string relpath = input.TEXT.TrimEnd('\\').Contains(":\\") ?
-                GetRelationPath(input.TEXT.TrimEnd('\\'), selectedDir) : input.TEXT.TrimEnd('\\');
-            if (pr.ExceptionDirs.Contains(relpath)) return;
-            pr.ExceptionDirs.Add(relpath);//добавление относительного пути
+            folderBrowserDialog1.InitialDirectory = dir;
+            folderBrowserDialog1.Multiselect = true;
+
+            var dr = folderBrowserDialog1.ShowDialog();
+            if (dr != DialogResult.OK) return;
+            var inputDirs = folderBrowserDialog1.SelectedPaths;
+            if (inputDirs.Length == 0) return;
+            foreach (string path in inputDirs)
+            {
+                if (string.IsNullOrWhiteSpace(path) ||
+                    listExceptions.Items.Contains(new ListViewItem(path))) continue;
+
+                string relativePath = GetRelativePath(path.TrimEnd('\\'), dir);
+                if (selectedProject.ExceptionDirs.Contains(relativePath)) continue;
+                selectedProject.ExceptionDirs.Add(relativePath);//добавление относительного пути
+
+            }
             listExceptions.Items.Clear();
-            listExceptions.Items.AddRange(pr.ExceptionDirs.ToArray());
+            listExceptions.Items.AddRange(selectedProject.ExceptionDirs.ToArray());
             SaveAllProjects();
         }
 
         //remove Except dir
         private void toolStripMenuItem2_Click(object sender, EventArgs e)
         {
-            var selected = List_Projects.SelectedItem;
-            if (selected == null) return;
-            var selectedDir = list_dirs.SelectedItems;
-            if (selectedDir.Count == 0)
+            if (list_dirs.Items.Count == 0) return; // Ensure there are items in the list
+
+            if (listExceptions.Items.Count == 0) return;
+            if (listExceptions.SelectedItems.Count == 0) return;
+            var selectedExceptions = listExceptions.SelectedItems;
+            var selectedProject = GetSelectedProject();
+            if (selectedProject == null) return;
+
+            //foreach (ListViewItem item in selectedExceptions)
+            //{
+            //    string selectedException = item.Text;
+            //    if (!selectedProject.ExceptionDirs.Contains(selectedException))
+            //        continue;
+            //    selectedProject.ExceptionDirs.Remove(selectedException);
+            //}
+            selectedProject.ExceptionDirs.RemoveAll(x => selectedExceptions.Contains(x));
+
+            listExceptions.Items.Clear();
+            listExceptions.Items.AddRange(selectedProject.ExceptionDirs.ToArray());
+            SaveAllProjects();
+        }
+
+        private void добавитьФайлыToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedProject = GetSelectedProject();
+            if (selectedProject == null) return;
+            string dir; //Selected directory into project
+
+            if (list_dirs.Items.Count != 0)
+                dir = list_dirs.Items[0].Text;
+            else
             {
-                CONSTS.AddNewLine(tblog, "Для добавления исключений" +
-                    " нужно выбрать одну из папок проекта, в котором будете указывать исключения");
+                MessageBox.Show("Добавьте папки в проект");
                 return;
             }
-            var selectedExc = listExceptions.SelectedItems;
-            if (selectedExc.Count == 0) return;
-            var pr = GetSelectedProject();
-            string selExc = selectedExc[0].ToString();
-            if (!pr.ExceptionDirs.Contains(selExc))
-                return;
-            pr.ExceptionDirs.Remove(selExc);
+
+            openFileDialog1.InitialDirectory = dir;
+            openFileDialog1.Multiselect = true;
+
+            var dr = openFileDialog1.ShowDialog();
+            if (dr != DialogResult.OK) return;
+            var inputDirs = openFileDialog1.FileNames;
+            if (inputDirs.Length == 0) return;
+            foreach (string path in inputDirs)
+            {
+                if (string.IsNullOrWhiteSpace(path) ||
+                    listExceptions.Items.Contains(new ListViewItem(path))) continue;
+
+                string relativePath = GetRelativePath(path, dir);
+                if (selectedProject.ExceptionDirs.Contains(relativePath)) continue;
+                selectedProject.ExceptionDirs.Add(relativePath);//добавление относительного пути
+
+            }
             listExceptions.Items.Clear();
-            listExceptions.Items.AddRange(pr.ExceptionDirs.ToArray());
-         //   SaveAllProjects();
+            listExceptions.Items.AddRange(selectedProject.ExceptionDirs.ToArray());
+            SaveAllProjects();
+        }
+
+        private void удалитьВсеToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedProject = GetSelectedProject();
+            if (selectedProject == null) return;
+            selectedProject.ExceptionDirs.Clear();
+            listExceptions.Items.Clear();
+            SaveAllProjects();
+        }
+
+        /// <summary>
+        /// Копировать выделенную папку в другие без проверки
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void копироватьЭтуПапкуВОстальныеToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var selected = List_Projects.SelectedItem;
+                if (selected == null) return;
+                var selectedDir = list_dirs.SelectedItems;
+                if (selectedDir.Count == 0) return;
+                string SelectedDirPATH = selectedDir[0].Text;
+                if (DriveLette == SelectedDirPATH.Split('\\')[0])//FlashDrive
+                {
+                    SelectedDirPATH = GetRelativePath(SelectedDirPATH, DriveLette);
+                }
+                var Project = GetSelectedProject();
+                CopyDIRSThread = new Thread(delegate ()
+                {
+                    CONSTS.invokeProgress(progressBar1, 0);
+                    CONSTS.DisableButton(button1); // кнопку старт в активный режим
+                    CONSTS.AddNewLine(tblog, "Проект " + Project.Name + ". Принудительное копирование " + SelectedDirPATH);
+                    foreach (Projdir onlineDir in Project.OnlineDirs)
+                    {
+                        if (onlineDir.Dir == SelectedDirPATH) continue;
+                        //copy selected Dir into others
+                        DirectoryCopy(SelectedDirPATH, onlineDir.Dir, true);
+                        CONSTS.AddNewLine(tblog, SelectedDirPATH + " } ---> {" + onlineDir.Dir);
+                    }
+                    CONSTS.AddNewLine(tblog, $"\t\tГотово. Выбранная папка скопирована в {(Project.OnlineDirs.Count() - 1)} другие папки."); ;
+                    CONSTS.EnableButton(button1); // кнопку старт в обычный режим
+                });
+                CopyDIRSThread.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "ForceCopy");
+                CONSTS.AddNewLine(tblog, "\t\tПроцесс копирования прерван.");
+            }
+
+
+
         }
         #endregion
 
@@ -479,6 +587,7 @@ namespace SyncFlash
         {
             IsRunningSync = status;
         }
+
         /// <summary>
         /// Запускает процесс синхронизации выделенных проектов
         /// </summary>
@@ -492,7 +601,6 @@ namespace SyncFlash
             //tmr.Stop();
             //StartSync(P, cbSilent.Checked);
         }
-        //TODO Menu/edit dirs
 
         /// <summary>
         /// Run Sync projects with attribute AutoSync=True
@@ -540,51 +648,7 @@ namespace SyncFlash
             log.ClearLog();
         }
 
-        /// <summary>
-        /// Копировать выделенную папку в другие без проверки
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void копироватьЭтуПапкуВОстальныеToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var selected = List_Projects.SelectedItem;
-                if (selected == null) return;
-                var selectedDir = list_dirs.SelectedItems;
-                if (selectedDir.Count == 0) return;
-                string SelectedDirPATH = selectedDir[0].Text;
-                if (DriveLette == SelectedDirPATH.Split('\\')[0])//FlashDrive
-                {
-                    SelectedDirPATH = GetRelationPath(SelectedDirPATH, DriveLette);
-                }
-                var Project = GetSelectedProject();
-                CopyDIRSThread = new Thread(delegate ()
-                {
-                    CONSTS.invokeProgress(progressBar1, 0);
-                    CONSTS.DisableButton(button1); // кнопку старт в активный режим
-                    CONSTS.AddNewLine(tblog, "Проект " + Project.Name + ". Принудительное копирование " + SelectedDirPATH);
-                    foreach (Projdir onlineDir in Project.OnlineDirs)
-                    {
-                        if (onlineDir.Dir == SelectedDirPATH) continue;
-                        //copy selected Dir into others
-                        DirectoryCopy(SelectedDirPATH, onlineDir.Dir, true);
-                        CONSTS.AddNewLine(tblog, SelectedDirPATH + " } ---> {" + onlineDir.Dir);
-                    }
-                    CONSTS.AddNewLine(tblog, $"\t\tГотово. Выбранная папка скопирована в {(Project.OnlineDirs.Count()-1)} другие папки."); ;
-                    CONSTS.EnableButton(button1); // кнопку старт в обычный режим
-                });
-                CopyDIRSThread.Start();
-            }
-            catch ( Exception ex)
-            {
-                MessageBox.Show(ex.Message, "ForceCopy");
-                CONSTS.AddNewLine(tblog, "\t\tПроцесс копирования прерван.");
-            }
-               
-            
-
-        }
+       
         /// <summary>
         /// Копирование директории
         /// </summary>
@@ -613,7 +677,7 @@ namespace SyncFlash
             // Get the files in the directory and copy them to the new location.
             FileInfo[] files = dir.GetFiles();
             foreach (FileInfo file in files)
-            { 
+            {
                 string temppath = Path.Combine(destDirName, file.Name);
                 try { file.CopyTo(temppath, true); }
                 catch (Exception) { continue; }
@@ -634,10 +698,6 @@ namespace SyncFlash
         {
 
         }
-
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-
-        }
+               
     }
 }

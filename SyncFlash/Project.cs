@@ -274,7 +274,7 @@ public    class Project : INotifyPropertyChanged
                 foreach (var file in Directory.EnumerateFiles(Dir, "*", SearchOption.AllDirectories))
                 {
                     // Получаем относительный путь файла внутри папки проекта
-                    string relativePath = Form1.GetRelationPath(file, Dir);
+                    string relativePath = Form1.GetRelativePath(file, Dir);
 
                     // Проверяем, не находится ли файл в исключениях (сравниваем относительный путь)
                     if (exceptionPaths.Contains(relativePath))

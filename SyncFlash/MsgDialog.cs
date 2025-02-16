@@ -100,7 +100,7 @@ namespace SyncFlash
                 {                    
                     foreach (Queue q in ExceptionsList)
                     {
-                        string relpath = Form1.GetRelationPath(q.SourceFile, q.SourceFileProjectDir);
+                        string relpath = Form1.GetRelativePath(q.SourceFile, q.SourceFileProjectDir);
                         if (currentProject.ExceptionDirs.Contains(relpath)) continue;
                         currentProject.ExceptionDirs.Add(relpath);//добавление относительного пути
                         _ = ReturnedQueue.Remove(q);
@@ -143,7 +143,7 @@ namespace SyncFlash
                 Queue selectedQueue = ReturnedQueue.First(x => x.Number == Number);
                 if (ExceptionsList.Contains(selectedQueue)) return;
                 ExceptionsList.Add(selectedQueue);
-                currentProject.ExceptionDirs.Add(Form1.GetRelationPath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));
+                currentProject.ExceptionDirs.Add(Form1.GetRelativePath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));
                 AddExceptions = true;
                 
             }

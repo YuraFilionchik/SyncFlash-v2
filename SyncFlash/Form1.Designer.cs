@@ -47,6 +47,7 @@
             listExceptions = new System.Windows.Forms.ListBox();
             contextExceptions = new System.Windows.Forms.ContextMenuStrip(components);
             toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            добавитьФайлыToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             label1 = new System.Windows.Forms.Label();
             btSelectUSB = new System.Windows.Forms.Button();
@@ -60,6 +61,8 @@
             splitContainer2 = new System.Windows.Forms.SplitContainer();
             label2 = new System.Windows.Forms.Label();
             folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            удалитьВсеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             contextprojects.SuspendLayout();
             contextdirs.SuspendLayout();
             contextExceptions.SuspendLayout();
@@ -128,7 +131,7 @@
             list_dirs.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             list_dirs.MultiSelect = false;
             list_dirs.Name = "list_dirs";
-            list_dirs.Size = new System.Drawing.Size(644, 82);
+            list_dirs.Size = new System.Drawing.Size(638, 82);
             list_dirs.TabIndex = 2;
             list_dirs.UseCompatibleStateImageBehavior = false;
             list_dirs.View = System.Windows.Forms.View.List;
@@ -195,28 +198,37 @@
             listExceptions.Location = new System.Drawing.Point(0, 145);
             listExceptions.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             listExceptions.Name = "listExceptions";
+            listExceptions.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
             listExceptions.Size = new System.Drawing.Size(649, 84);
+            listExceptions.Sorted = true;
             listExceptions.TabIndex = 7;
             // 
             // contextExceptions
             // 
             contextExceptions.ImageScalingSize = new System.Drawing.Size(20, 20);
-            contextExceptions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem1, toolStripMenuItem2 });
+            contextExceptions.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { toolStripMenuItem1, добавитьФайлыToolStripMenuItem, toolStripMenuItem2, удалитьВсеToolStripMenuItem });
             contextExceptions.Name = "contextdirs";
-            contextExceptions.Size = new System.Drawing.Size(190, 52);
+            contextExceptions.Size = new System.Drawing.Size(221, 128);
             // 
             // toolStripMenuItem1
             // 
             toolStripMenuItem1.Name = "toolStripMenuItem1";
-            toolStripMenuItem1.Size = new System.Drawing.Size(189, 24);
-            toolStripMenuItem1.Text = "Добавить папку";
+            toolStripMenuItem1.Size = new System.Drawing.Size(220, 24);
+            toolStripMenuItem1.Text = "Добавить папки...";
             toolStripMenuItem1.Click += toolStripMenuItem1_Click;
+            // 
+            // добавитьФайлыToolStripMenuItem
+            // 
+            добавитьФайлыToolStripMenuItem.Name = "добавитьФайлыToolStripMenuItem";
+            добавитьФайлыToolStripMenuItem.Size = new System.Drawing.Size(220, 24);
+            добавитьФайлыToolStripMenuItem.Text = "Добавить файлы...";
+            добавитьФайлыToolStripMenuItem.Click += добавитьФайлыToolStripMenuItem_Click;
             // 
             // toolStripMenuItem2
             // 
             toolStripMenuItem2.Name = "toolStripMenuItem2";
-            toolStripMenuItem2.Size = new System.Drawing.Size(189, 24);
-            toolStripMenuItem2.Text = "Удалить папку";
+            toolStripMenuItem2.Size = new System.Drawing.Size(220, 24);
+            toolStripMenuItem2.Text = "Удалить выбранные";
             toolStripMenuItem2.Click += toolStripMenuItem2_Click;
             // 
             // label1
@@ -260,7 +272,6 @@
             button1.TabIndex = 10;
             button1.Text = "StartSync";
             button1.UseVisualStyleBackColor = false;
-            button1.Click += button1_Click_1;
             // 
             // tblog
             // 
@@ -406,6 +417,20 @@
             // folderBrowserDialog1
             // 
             folderBrowserDialog1.RootFolder = System.Environment.SpecialFolder.MyComputer;
+            folderBrowserDialog1.ShowHiddenFiles = true;
+            // 
+            // openFileDialog1
+            // 
+            openFileDialog1.FileName = "openFileDialog1";
+            openFileDialog1.Multiselect = true;
+            openFileDialog1.ShowHiddenFiles = true;
+            // 
+            // удалитьВсеToolStripMenuItem
+            // 
+            удалитьВсеToolStripMenuItem.Name = "удалитьВсеToolStripMenuItem";
+            удалитьВсеToolStripMenuItem.Size = new System.Drawing.Size(220, 24);
+            удалитьВсеToolStripMenuItem.Text = "Удалить все";
+            удалитьВсеToolStripMenuItem.Click += удалитьВсеToolStripMenuItem_Click;
             // 
             // Form1
             // 
@@ -472,6 +497,9 @@
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.Label label2;
         public System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.ToolStripMenuItem добавитьФайлыToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem удалитьВсеToolStripMenuItem;
     }
 }
 

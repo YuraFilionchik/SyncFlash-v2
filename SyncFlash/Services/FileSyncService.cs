@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace SyncFlash.Services
                 {
                     foreach (var file in dir.AllFiles())
                     {
-                        string relativePath = Form1.GetRelationPath(file.Key, dir.Dir);
+                        string relativePath = Form1.GetRelativePath(file.Key, dir.Dir);
                         var newestFile = file;
                         string sourceDir = dir.Dir;
 
@@ -78,7 +79,8 @@ namespace SyncFlash.Services
 
         public async Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress, IProgress<int> progressbar, CancellationToken cancellationToken)
         {
-            int errors = 0;
+            var errors = new List<string>();
+
             foreach (var file in queue)
             {
                 cancellationToken.ThrowIfCancellationRequested(); // Прерывание при отмене
@@ -99,11 +101,19 @@ namespace SyncFlash.Services
                 catch (Exception ex)
                 {
                     progress.Report($"Error copying {file.SourceFile}: {ex.Message}");
+                    errors.Add(file.SourceFile);
                 }
             }
 
-            progress.Report("Sync completed!");
+            progress.Report($"End of synchronization");
             progressbar.Report(100);
+            progress.Report("------------------------------");
+            progress.Report($"Total files: {queue.Count}");
+            progress.Report($"Errors: {errors.Count} ==>");
+            foreach (var error in errors)
+            {
+                progress.Report(error);
+            }
         }
 
     }
@@ -118,7 +128,7 @@ namespace SyncFlash.Services
         /// </summary>
         public void AddToQueue(string sourceFile, string targetFile, string sourceDir, string targetDir, DateTime sourceDate, DateTime targetDate, bool isNewFile)
         {
-            string relativePath = Form1.GetRelationPath(sourceFile, sourceDir);
+            string relativePath = Form1.GetRelativePath(sourceFile, sourceDir);
 
             // Проверяем, есть ли уже этот файл в очереди и у кого самая свежая дата
             if (_latestFiles.TryGetValue(relativePath, out var existingFile))
