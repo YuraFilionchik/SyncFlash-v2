@@ -13,7 +13,6 @@ namespace SyncFlash
 {
 public    class Project : INotifyPropertyChanged
     {
-        private MyTimer timer = new MyTimer(Form1.log);
         public List<Projdir> AllProjectDirs; //список всех папок для синхронизации
         private List<Projdir> onlineDirs = new List<Projdir>();
         public List<string> ExceptionDirs; //папки исключения
@@ -107,6 +106,15 @@ public    class Project : INotifyPropertyChanged
             AutoSync = false;
         }
 
+        public List<string> Info()
+        {
+            var res = new List<string>();
+            res.Add("Project: " + Name);
+            res.Add("AutoSync: " + AutoSync);
+            res.Add("Last sync time: " + LastSyncTime);
+            res.Add("LastSyncSize: " + FormatSize(LastSyncSize));
+            return res;
+        }
         public void RemoveDir(string dir)
         {
            // timer.Start("removeing dir", 1);
@@ -155,7 +163,6 @@ public    class Project : INotifyPropertyChanged
     /// </summary>
  public   class Projdir
     {
-        MyTimer tmr;
         public string _dir;
         private Project FromProject;
         private string pc_name;
@@ -217,36 +224,28 @@ public    class Project : INotifyPropertyChanged
             Dir = dir;
             pc_name = System.Environment.MachineName;
             FromProject = project;
-            tmr = new MyTimer(Form1.log);
         }
         public Projdir(string dir, Project project, string pc)
         {
             Dir = dir;
             pc_name = pc;
             FromProject = project;
-            tmr = new MyTimer(Form1.log);
         }
 
         /// <summary>
-        /// Поиск файла и даты в списке всех файлов
+        /// Поиск файла и даты в списке всех файлов,
         /// </summary>
-        /// <param name="relateFilePath"></param>
-        /// <returns></returns>
-        public KeyValuePair<string, DateTime> FindFile(string relateFilePath)
+        /// <param name="relativeFilePath"></param>
+        /// <returns><key = PathToFile, value = LastModified></returns>
+        public KeyValuePair<string, DateTime> FindFile(string relativeFilePath)
         {
-            string ABSpath = Dir + relateFilePath;
+            string ABSpath = Dir + relativeFilePath;
             foreach (var file in AllFiles())
             {
-               
-                // if (Form1.GetRelationPath(file.Key, Dir) == relateFilePath)
                 if (file.Key == ABSpath)
                 {
-                    
-                   // tmr.AddLine("Find file " + ABSpath);
                     return file;
                 }
-               
-
             }
             return new KeyValuePair<string, DateTime>();
         }
@@ -308,7 +307,6 @@ public    class Project : INotifyPropertyChanged
         {
             get
             {
-
                 DateTime lastmod = DefaultDate; ;
                 if (!IsOnline) return lastmod;
                 var files1 = AllFiles();
@@ -317,34 +315,12 @@ public    class Project : INotifyPropertyChanged
             }
         }
 
-        /// <summary>
-        /// Сравнение с другой папкой проекта пофайлово
-        /// </summary>
-        /// <param name="Dir2"></param>
-        /// <returns>[0]-кол-во файлов новее чем в Dir2, [1]-старше чем в Dir2,
-        /// [2]-новых файлов, [3]-отсутсвующих файлов по сравнению с Dir2</returns>
-        public int[] CompairDir(Projdir Dir2)
-        {
-            int[] res = new int[2];
-            var files2 = Dir2.AllFiles();
-            //key - filepath
-            //value - datetime
-            var all = AllFiles();
-            foreach (var filedate in all)
-            {
-                var n0 = all.Count(x => files2.Any(c => c.Key == x.Key && c.Value < x.Value));
-                var n1 = all.Count(x => files2.Any(c => c.Key == x.Key && c.Value > x.Value));
-                var n2 = all.Count(x => !files2.Any(c => c.Key == x.Key));
-                var n3 = files2.Count(x => !all.Any(c => c.Key == x.Key));
-            }
-
-            return res;
-        }
 
         public override string ToString()
         {
             return Dir;
         }
+
         /// <summary>
         /// Предоставляет информацию о папке
         /// </summary>
@@ -359,6 +335,7 @@ public    class Project : INotifyPropertyChanged
             res.Add("Файлов \t:" + AllFiles().Count);
             return res;
         }
+
         public List<string> Info1()
         {
             var res = new List<string>();
@@ -370,19 +347,4 @@ public    class Project : INotifyPropertyChanged
             return res;
         }
     }
-
-    //class Queue
-    //{
-    //    Dictionary<string, string> Files;
-    //    public Queue()
-    //    {
-    //        Files = new Dictionary<string, string>();
-    //    }
-
-    //    public void AddFile(string SourceFilePath, string DestFilePath)
-    //    {
-    //        Files.Add(SourceFilePath, DestFilePath);
-    //    }
-
-    //}
 }

@@ -13,7 +13,7 @@ namespace SyncFlash
 {
     public partial class Form1 : Form
     {
-        public string DriveLette;
+        public string DriveLetter;
         public const string cfg_file = "conf.ini";
         string pc_name = Environment.MachineName;
         BindingList<Project> Projects = new BindingList<Project>();
@@ -27,11 +27,9 @@ namespace SyncFlash
 
         Thread SyncThread;
         Thread CopyDIRSThread; //процесс принудительного копирования папки
-        MyTimer tmr;
-        public static LogForm log;
 
         public Form1()
-        { //TODO SYNC SOME PROJECTS 
+        { 
             InitializeComponent();
             _fileSyncService = new FileSyncService();
             _configService = new ConfigService(cfg_file);
@@ -47,17 +45,15 @@ namespace SyncFlash
             });
 
             Projects = _configService.GetProjects();
-            log = new LogForm();
-            tmr = new MyTimer(log);
             List_Projects.DataSource = Projects;
-            DriveLette = CONSTS.GetDriveLetter();
+            DriveLetter = CONSTS.GetDriveLetter();
             button1.Text = CONSTS.btSyncText1;
             this.FormClosing += Form1_FormClosing;
             List_Projects.SelectedIndexChanged += List_Projects_SelectedIndexChanged;
             list_dirs.SelectedIndexChanged += List_dirs_SelectedIndexChanged;
             list_dirs.DoubleClick += List_dirs_DoubleClick;
             checkBox1.CheckedChanged += CheckBox1_CheckedChanged;
-            _progress.Report("USB-Flash: " + DriveLette);
+            _progress.Report("USB-Flash: " + DriveLetter);
             button1.Click += button1_Click;
 
         }
@@ -96,6 +92,7 @@ namespace SyncFlash
                 MessageBox.Show(ex.Message, "Opening folder " + selectedDir);
             }
         }
+
         //selected DIR
         private void List_dirs_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -134,6 +131,7 @@ namespace SyncFlash
         private void List_Projects_SelectedIndexChanged(object sender, EventArgs e)
         {
             DisplayDirs();
+            DisplayProjectInfo();
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
@@ -192,10 +190,7 @@ namespace SyncFlash
                 return;
             }
 
-            var selectedProject = GetSelectedProject();
-            if (selectedProject == null) return;
-
-           await StartSync(selectedProject, false);
+            await SyncSelectedProject();
 
         }
 
@@ -241,7 +236,7 @@ namespace SyncFlash
             SaveAllProjects();
         }
 
-        private long GetProjectSize(Project project)
+        private static long GetProjectSize(Project project)
         {
             long totalSize = 0;
             foreach (var dir in project.AllProjectDirs)
@@ -272,8 +267,8 @@ namespace SyncFlash
             if (dr != DialogResult.OK) return;
             if (!Directory.Exists(fd.SelectedPath)) return;
             string newLette = fd.SelectedPath.Split('\\').First();
-            DriveLette = newLette;
-            CONSTS.AddNewLine(tblog, "New USB letter: " + DriveLette);
+            DriveLetter = newLette;
+            CONSTS.AddNewLine(tblog, "New USB letter: " + DriveLetter);
         }
 
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
@@ -284,7 +279,6 @@ namespace SyncFlash
             SaveAllProjects();
         }
         #endregion
-
 
 
 
@@ -374,7 +368,7 @@ namespace SyncFlash
         }
         private void синхронизироватьToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            SyncSelectedProjects();
+            SyncSelectedProject();
         }
         private void добавитьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -389,7 +383,7 @@ namespace SyncFlash
             list_dirs.Items.Add(inputDir);
             var p = GetSelectedProject();
             var lette = inputDir.Split('\\')[0];
-            if (lette == DriveLette)
+            if (lette == DriveLetter)
             {//removable disk
                 string flashDriveDir = inputDir.TrimEnd('\\').Substring(lette.Length);
                 p.AllProjectDirs.Add(new Projdir(flashDriveDir, p, CONSTS.FlashDrive));
@@ -549,9 +543,9 @@ namespace SyncFlash
                 var selectedDir = list_dirs.SelectedItems;
                 if (selectedDir.Count == 0) return;
                 string SelectedDirPATH = selectedDir[0].Text;
-                if (DriveLette == SelectedDirPATH.Split('\\')[0])//FlashDrive
+                if (DriveLetter == SelectedDirPATH.Split('\\')[0])//FlashDrive
                 {
-                    SelectedDirPATH = GetRelativePath(SelectedDirPATH, DriveLette);
+                    SelectedDirPATH = GetRelativePath(SelectedDirPATH, DriveLetter);
                 }
                 var Project = GetSelectedProject();
                 CopyDIRSThread = new Thread(delegate ()
@@ -582,73 +576,29 @@ namespace SyncFlash
         }
         #endregion
 
-
-        public void SetSyncStatus(bool status)
-        {
-            IsRunningSync = status;
-        }
-
         /// <summary>
         /// Запускает процесс синхронизации выделенных проектов
         /// </summary>
-        private void SyncSelectedProjects()
+        private async Task SyncSelectedProject()
         {
-            //tmr.Start("Подготовка синхронизации");
-            //var selected = List_Projects.SelectedItem;
-            //if (selected == null) return;
-            //var P = GetSelectedProject();
-            //tblog.Rows.Clear();
-            //tmr.Stop();
-            //StartSync(P, cbSilent.Checked);
+            var selectedProject = GetSelectedProject();
+            await StartSync(selectedProject, false);
         }
 
+        private void DisplayProjectInfo()
+        {
+            var selectedProj = GetSelectedProject();
+            if (selectedProj == null) return;
+            CONSTS.ClearLog(tblog);
+            foreach(string line in selectedProj.Info())
+            {
+                CONSTS.AddNewLine(tblog, line);
+            }
+        }
         /// <summary>
         /// Run Sync projects with attribute AutoSync=True
         /// </summary>
-        public void StartAutoSync()
-        {
-            //Thread autoSyncThread = new Thread(delegate ()
-            //  {
-            //      var projAuto = Projects.Where(x => x.AutoSync);//All autosync projects
-            //      if (projAuto.Count() == 0)
-            //      {
-            //          CONSTS.AddNewLine(tblog, "Nothing for autosync");
-            //          return;
-            //      }
-            //      CONSTS.AddNewLine(tblog, "For AutoSync " + projAuto.Count() + " projects");
-            //      foreach (var project in projAuto)
-            //      {
-            //          if (SyncThread != null)
-            //              while (IsRunningSync || SyncThread.IsAlive)
-            //              {
-            //                  Thread.Sleep(1000);
-            //              }
-            //          StartSync(project, true);
 
-            //      }
-            //  });
-            //autoSyncThread.Start();
-
-        }
-
-        private void btLog_Click(object sender, EventArgs e)
-        {
-            if (log.IsDisposed) log = new LogForm();
-            if (log.Visible) log.Visible = false;
-            else log.Show();
-        }
-
-        //add text info to LogForm
-        public void Addlog(string text)
-        {
-            log.AddLine(text);
-        }
-        public void ClearLog()
-        {
-            log.ClearLog();
-        }
-
-       
         /// <summary>
         /// Копирование директории
         /// </summary>
