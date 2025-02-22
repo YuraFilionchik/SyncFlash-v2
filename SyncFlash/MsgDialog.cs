@@ -23,6 +23,8 @@ namespace SyncFlash
                 InitializeComponent();
                 currentProject = project;
                 dgv.SelectionChanged += Dgv_SelectionChanged;
+                //dgv checkbox checked
+                dgv.CellContentClick += Dgv_CellContentClick;
                 ReturnedQueue = queues;
                 radioButton1.Checked = true;
                 //Fill datagridview
@@ -40,6 +42,22 @@ namespace SyncFlash
 
         }
 
+        private void Dgv_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex != 0) return;
+            DataGridViewRow selectedrow = dgv.Rows[e.RowIndex];
+            if (selectedrow == null) return;
+            bool cellCheckedState = (bool)selectedrow.Cells[0].EditedFormattedValue;
+            int Number = (int)selectedrow.Cells["Number"].Value;//number of selected queue
+            Queue selectedQueue = ReturnedQueue.Find(x => x.Number == Number);
+            selectedQueue.Active = cellCheckedState;
+        }
+
+        /// <summary>
+        /// Filtering view
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RadioButton_CheckedChanged(object sender, EventArgs e)
         {
             if (radioButton1.Checked)//All files
@@ -122,25 +140,22 @@ namespace SyncFlash
         {
             try
             {
-                //add exceptions
-                if (AddExceptions)
-                {
-                    foreach (Queue q in ExceptionsList)
-                    {
-                        string relpath = Form1.GetRelativePath(q.SourceFile, q.SourceFileProjectDir);
-                        if (currentProject.ExceptionDirs.Contains(relpath)) continue;
-                        currentProject.ExceptionDirs.Add(relpath);//добавление относительного пути
-                        _ = ReturnedQueue.Remove(q);
-                    }
-                }
-                foreach (DataGridViewRow row in dgv.Rows) //Удаляем из очереди файлы, которые не отмечены
-                {
-                    if (!(bool)row.Cells["check"].Value)
-                    {
-                        Queue q = ReturnedQueue.Find(x => x.Number == (int)row.Cells["Number"].Value);
-                        if (q != null) ReturnedQueue.Remove(q);
-                    }
-                }
+                ////add exceptions
+                //if (AddExceptions)
+                //{
+                //    foreach (Queue q in ExceptionsList)
+                //    {
+                //        _ = ReturnedQueue.Remove(q);
+                //    }
+                //}
+                //foreach (DataGridViewRow row in dgv.Rows) //Удаляем из очереди файлы, которые не отмечены
+                //{
+                //    if (!(bool)row.Cells["check"].Value)
+                //    {
+                //        Queue q = ReturnedQueue.Find(x => x.Number == (int)row.Cells["Number"].Value);
+                //        if (q != null) ReturnedQueue.Remove(q);
+                //    }
+                //}
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
@@ -168,6 +183,7 @@ namespace SyncFlash
                 DataGridViewRow selectedrow = dgv.SelectedRows[0];
                 int Number = (int)selectedrow.Cells["Number"].Value;//number of selected queue
                 Queue selectedQueue = ReturnedQueue.First(x => x.Number == Number);
+                selectedQueue.Active = false;
                 if (ExceptionsList.Contains(selectedQueue)) return;
                 ExceptionsList.Add(selectedQueue);
                 currentProject.ExceptionDirs.Add(Form1.GetRelativePath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));

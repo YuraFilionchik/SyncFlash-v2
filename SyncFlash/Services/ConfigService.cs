@@ -57,7 +57,8 @@ namespace SyncFlash.Services
 
                               return project;
                           })
-                          .OrderByDescending(p => p.LastSyncTime)
+                          .OrderByDescending(x => x.OnlineDirs.Count)
+                          .ThenByDescending(p => p.LastSyncTime)
                           .ToList();
 
             return new BindingList<Project>(list);

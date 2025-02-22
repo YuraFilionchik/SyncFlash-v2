@@ -104,7 +104,6 @@
             dgv.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             dgv.MultiSelect = false;
             dgv.Name = "dgv";
-            dgv.ReadOnly = true;
             dgv.RowHeadersVisible = false;
             dgv.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             dgv.Size = new System.Drawing.Size(1028, 575);
@@ -114,7 +113,6 @@
             // 
             check.HeaderText = "V";
             check.Name = "check";
-            check.ReadOnly = true;
             check.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             check.Width = 24;
             // 
@@ -123,7 +121,6 @@
             Number.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             Number.HeaderText = "№";
             Number.Name = "Number";
-            Number.ReadOnly = true;
             Number.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             Number.Width = 45;
             // 
@@ -133,21 +130,18 @@
             Source.HeaderText = "Источник";
             Source.MinimumWidth = 100;
             Source.Name = "Source";
-            Source.ReadOnly = true;
             // 
             // DateSource
             // 
             DateSource.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             DateSource.HeaderText = "Изменен";
             DateSource.Name = "DateSource";
-            DateSource.ReadOnly = true;
             DateSource.Width = 81;
             // 
             // Arrow
             // 
             Arrow.HeaderText = "-->";
             Arrow.Name = "Arrow";
-            Arrow.ReadOnly = true;
             Arrow.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             Arrow.ToolTipText = "Направление";
             Arrow.Width = 30;
@@ -157,7 +151,6 @@
             DateTarget.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             DateTarget.HeaderText = "Изменен";
             DateTarget.Name = "DateTarget";
-            DateTarget.ReadOnly = true;
             DateTarget.Width = 81;
             // 
             // Target
@@ -165,7 +158,6 @@
             Target.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             Target.HeaderText = "Назначение";
             Target.Name = "Target";
-            Target.ReadOnly = true;
             // 
             // contextMenuStrip1
             // 

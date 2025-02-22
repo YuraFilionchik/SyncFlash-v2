@@ -416,13 +416,13 @@
             // folderBrowserDialog1
             // 
             folderBrowserDialog1.RootFolder = System.Environment.SpecialFolder.MyComputer;
-            //folderBrowserDialog1.ShowHiddenFiles = true;
+            folderBrowserDialog1.ShowHiddenFiles = true;
             // 
             // openFileDialog1
             // 
             openFileDialog1.FileName = "openFileDialog1";
             openFileDialog1.Multiselect = true;
-            //openFileDialog1.ShowHiddenFiles = true;
+            openFileDialog1.ShowHiddenFiles = true;
             // 
             // groupBox1
             // 
