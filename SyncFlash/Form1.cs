@@ -438,7 +438,7 @@ namespace SyncFlash
             }
 
             folderBrowserDialog1.InitialDirectory = dir;
-            folderBrowserDialog1.Multiselect = true;
+            //folderBrowserDialog1.Multiselect = true;
 
             var dr = folderBrowserDialog1.ShowDialog();
             if (dr != DialogResult.OK) return;

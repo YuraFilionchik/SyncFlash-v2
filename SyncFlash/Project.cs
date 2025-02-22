@@ -276,7 +276,7 @@ public    class Project : INotifyPropertyChanged
                     string relativePath = Form1.GetRelativePath(file, Dir);
 
                     // Проверяем, не находится ли файл в исключениях (сравниваем относительный путь)
-                    if (exceptionPaths.Contains(relativePath))
+                    if (exceptionPaths.Any(x=>relativePath.Contains(x)))
                         continue;
 
                     // Проверяем, подпадает ли файл под шаблон (*.bak, *.tmp)

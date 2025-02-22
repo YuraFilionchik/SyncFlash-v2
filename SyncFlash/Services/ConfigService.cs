@@ -37,7 +37,7 @@ namespace SyncFlash.Services
                                   LastSyncTime = DateTime.TryParse(p.Attribute("lastSync")?.Value, out var date) ? date : (DateTime?)null,
                                   LastSyncSize = long.TryParse(p.Attribute("lastSize")?.Value, out var size) ? size : 0,
                                   AutoSync = bool.TryParse(p.Attribute("autoSync")?.Value, out var auto) && auto,
-                                  ExceptionDirs = p.Elements("ExceptionDir").Select(x => x.Value).ToList(),
+                                  ExceptionDirs = p.Elements("ExceptionDir").Select(x => x.Attribute("path")?.Value ?? "").ToList(),
                               };
 
                               project.AllProjectDirs = p.Elements("Directory")
@@ -73,7 +73,8 @@ namespace SyncFlash.Services
                     new XAttribute("lastSync", p.LastSyncTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? ""),
                     new XAttribute("lastSize", p.LastSyncSize),
                     new XAttribute("autoSync", p.AutoSync),
-                    p.ExceptionDirs.Select(ex => new XElement("ExceptionDir", ex)),
+                    p.ExceptionDirs.Select(ex => new XElement("ExceptionDir", 
+                    new XAttribute("path", ex))),
                     p.AllProjectDirs.Select(dir =>
                     {
                 // Если папка на флешке, сохраняем путь без буквы диска

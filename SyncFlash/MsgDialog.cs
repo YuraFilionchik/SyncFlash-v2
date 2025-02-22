@@ -24,8 +24,13 @@ namespace SyncFlash
                 currentProject = project;
                 dgv.SelectionChanged += Dgv_SelectionChanged;
                 ReturnedQueue = queues;
+                radioButton1.Checked = true;
                 //Fill datagridview
                 DisplayQueues(queues);
+                radioButton1.CheckedChanged += RadioButton_CheckedChanged;
+                radioButton2.CheckedChanged += RadioButton_CheckedChanged;
+                radioButton3.CheckedChanged += RadioButton_CheckedChanged;
+                radioButton4.CheckedChanged += RadioButton_CheckedChanged;
             }
             catch (Exception ex)
             {
@@ -34,6 +39,28 @@ namespace SyncFlash
 
 
         }
+
+        private void RadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton1.Checked)//All files
+            {
+                DisplayQueues(ReturnedQueue);
+            }
+            else if (radioButton2.Checked) //New files
+            {
+                DisplayQueues(ReturnedQueue.Where(x => x.isNewFile).ToList());
+            }
+            else if (radioButton3.Checked) //Modified files
+            {
+                DisplayQueues(ReturnedQueue.Where(x => x.Active && !x.isNewFile).ToList());
+            }
+            else if (radioButton4.Checked) //Not modified files
+            {
+                DisplayQueues(ReturnedQueue.Where(x => !x.Active).ToList());
+            }
+        }
+
+     
         /// <summary>
         /// Вывод очереди в таблицу datagridview
         /// </summary>
@@ -46,7 +73,7 @@ namespace SyncFlash
                 foreach (var q in queues)
                 {
                     int i = dgv.Rows.Add();
-                   
+
                     dgv.Rows[i].Cells["Number"].Value = q.Number;
                     dgv.Rows[i].Cells["Source"].Value = q.SourceFile;
                     dgv.Rows[i].Cells["Target"].Value = q.TargetFile;
@@ -69,7 +96,7 @@ namespace SyncFlash
                     dgv.Rows[i].Cells["check"].Value = q.Active;
 
                 }
-                label1.Text = $"Total: {queues.Count()} files. \t\t New {queues.Count(c=>c.isNewFile)} files"; 
+                toolStripStatusLabel1.Text = $"Total: {queues.Count()} files. \t\t New {queues.Count(c => c.isNewFile)} files";
             }
             catch (Exception ex)
             {
@@ -97,7 +124,7 @@ namespace SyncFlash
             {
                 //add exceptions
                 if (AddExceptions)
-                {                    
+                {
                     foreach (Queue q in ExceptionsList)
                     {
                         string relpath = Form1.GetRelativePath(q.SourceFile, q.SourceFileProjectDir);
@@ -145,7 +172,7 @@ namespace SyncFlash
                 ExceptionsList.Add(selectedQueue);
                 currentProject.ExceptionDirs.Add(Form1.GetRelativePath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));
                 AddExceptions = true;
-                
+
             }
             catch (Exception ex)
             {
@@ -155,7 +182,20 @@ namespace SyncFlash
 
         private void отменитьДобавленныеИсключенияToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AddExceptions = false;
+            try
+            {
+                if (dgv.SelectedRows.Count == 0) return;
+                DataGridViewRow selectedrow = dgv.SelectedRows[0];
+                int Number = (int)selectedrow.Cells["Number"].Value;//number of selected queue
+                Queue selectedQueue = ReturnedQueue.First(x => x.Number == Number);
+                if (!ExceptionsList.Contains(selectedQueue)) return;
+                ExceptionsList.Remove(selectedQueue);
+                currentProject.ExceptionDirs.Remove(Form1.GetRelativePath(selectedQueue.SourceFile, selectedQueue.SourceFileProjectDir));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "remove exception");
+            }
         }
 
         private void поменятьМестамиИсточникИНазначениеToolStripMenuItem_Click(object sender, EventArgs e)
@@ -207,5 +247,11 @@ namespace SyncFlash
                 MessageBox.Show(ex.Message, "Удаление выбранного файла");
             }
         }
+
+        private void MsgDialog_Load(object sender, EventArgs e)
+        {
+
+        }
+
     }
 }

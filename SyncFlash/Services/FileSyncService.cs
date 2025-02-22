@@ -80,6 +80,7 @@ namespace SyncFlash.Services
         public async Task SyncFilesAsync(List<Queue> queue, IProgress<string> progress, IProgress<int> progressbar, CancellationToken cancellationToken)
         {
             var errors = new List<string>();
+            int cCopied = 0;
 
             foreach (var file in queue)
             {
@@ -90,12 +91,13 @@ namespace SyncFlash.Services
                 try
                 {
                     await Task.Run(() => File.Copy(file.SourceFile, file.TargetFile, true), cancellationToken);
+                    cCopied++;
                 }
                 catch (System.IO.DirectoryNotFoundException ex)
                 {
                     Directory.CreateDirectory(Directory.GetParent(file.TargetFile).ToString());
                     await Task.Run(() => File.Copy(file.SourceFile, file.TargetFile, true), cancellationToken);
-
+                    cCopied++;
                     progress.Report($"Created directory {Directory.GetParent(file.TargetFile)}");
                 }
                 catch (Exception ex)
@@ -109,6 +111,7 @@ namespace SyncFlash.Services
             progressbar.Report(100);
             progress.Report("------------------------------");
             progress.Report($"Total files: {queue.Count}");
+            progress.Report($"Copied files: {queue.Count}");
             progress.Report($"Errors: {errors.Count} ==>");
             foreach (var error in errors)
             {
