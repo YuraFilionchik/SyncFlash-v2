@@ -3,10 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using System.Windows.Forms;
 
 namespace SyncFlash
@@ -55,8 +57,12 @@ namespace SyncFlash
             checkBox1.CheckedChanged += CheckBox1_CheckedChanged;
             _progress.Report("USB-Flash: " + DriveLetter);
             button1.Click += button1_Click;
+            List_Projects.DrawMode = DrawMode.OwnerDrawFixed;
+            List_Projects.DrawItem += List_Projects_DrawItem;
 
         }
+
+        
 
 
 
@@ -126,6 +132,47 @@ namespace SyncFlash
         {
             DisplayDirs();
         }
+
+        private void List_Projects_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            e.DrawBackground(); // Отрисовка фона элемента
+
+            if (e.Index < 0)
+                return; // Проверка на корректный индекс
+
+            string text = List_Projects.Items[e.Index].ToString();
+            Color textColor = Color.Black; // Цвет текста по умолчанию
+            Color backColor = Color.White; // Цвет фона по умолчанию
+
+            Project project = (Project)List_Projects.Items[e.Index];
+
+            // Логика для выбора цвета
+            if (project.OnlineDirs.Count > 1)
+            {
+                textColor = Color.Black;
+                backColor = Color.LightGreen;
+            }
+            else if (project.OnlineDirs.Count == 0)
+            {
+                textColor = Color.Black;
+                backColor = Color.LightGray;
+            }
+
+            // Отрисовка фона с выбранным цветом
+            using (SolidBrush backBrush = new SolidBrush(backColor))
+            {
+                e.Graphics.FillRectangle(backBrush, e.Bounds);
+            }
+
+            // Отрисовка текста с выбранным цветом
+            using (SolidBrush textBrush = new SolidBrush(textColor))
+            {
+                e.Graphics.DrawString(text, e.Font, textBrush, e.Bounds, StringFormat.GenericDefault);
+            }
+
+            e.DrawFocusRectangle(); // Отрисовка рамки фокуса
+        }
+
 
         //select project
         private void List_Projects_SelectedIndexChanged(object sender, EventArgs e)
@@ -370,6 +417,7 @@ namespace SyncFlash
         {
             SyncSelectedProject();
         }
+
         private void добавитьПапкуToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selected = List_Projects.SelectedItem;
@@ -377,7 +425,7 @@ namespace SyncFlash
             if (dr != DialogResult.OK) return;
             string inputDir = folderBrowserDialog1.SelectedPath.TrimEnd('\\');
             if (string.IsNullOrWhiteSpace(inputDir) ||
-                list_dirs.Items.Contains(new ListViewItem(inputDir)) ||
+                list_dirs.Items.Contains(new System.Windows.Forms.ListViewItem(inputDir)) ||
                 selected == null) return;
 
             list_dirs.Items.Add(inputDir);
@@ -447,7 +495,7 @@ namespace SyncFlash
             foreach (string path in inputDirs)
             {
                 if (string.IsNullOrWhiteSpace(path) ||
-                    listExceptions.Items.Contains(new ListViewItem(path))) continue;
+                    listExceptions.Items.Contains(new System.Windows.Forms.ListViewItem(path))) continue;
 
                 string relativePath = GetRelativePath(path.TrimEnd('\\'), dir);
                 if (selectedProject.ExceptionDirs.Contains(relativePath)) continue;
@@ -508,7 +556,7 @@ namespace SyncFlash
             foreach (string path in inputDirs)
             {
                 if (string.IsNullOrWhiteSpace(path) ||
-                    listExceptions.Items.Contains(new ListViewItem(path))) continue;
+                    listExceptions.Items.Contains(new System.Windows.Forms.ListViewItem(path))) continue;
 
                 string relativePath = GetRelativePath(path, dir);
                 if (selectedProject.ExceptionDirs.Contains(relativePath)) continue;

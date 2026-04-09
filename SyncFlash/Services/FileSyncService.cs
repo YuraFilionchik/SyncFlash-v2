@@ -82,7 +82,7 @@ namespace SyncFlash.Services
             var errors = new List<string>();
             int cCopied = 0;
 
-            foreach (var file in queue)
+            foreach (var file in queue.Where(x =>x.Active))
             {
                 cancellationToken.ThrowIfCancellationRequested(); // Прерывание при отмене
                 progressbar.Report(queue.IndexOf(file) + 1);
@@ -111,7 +111,7 @@ namespace SyncFlash.Services
             progressbar.Report(100);
             progress.Report("------------------------------");
             progress.Report($"Total files: {queue.Count}");
-            progress.Report($"Copied files: {queue.Count}");
+            progress.Report($"Copied files: {cCopied}");
             progress.Report($"Errors: {errors.Count} ==>");
             foreach (var error in errors)
             {
