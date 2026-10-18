@@ -1,26 +1,21 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.ComponentModel;
+using System.IO.Enumeration;
 using System.Xml.Linq;
-using filesdates = System.Collections.Generic.Dictionary<string, System.DateTime>;
+using FilesDates = System.Collections.Generic.Dictionary<string, System.DateTime>;
 
 namespace SyncFlash
 {
 public    class Project : INotifyPropertyChanged
     {
         public List<Projdir> AllProjectDirs; //список всех папок для синхронизации
-        private List<Projdir> onlineDirs = new List<Projdir>();
+        private readonly List<Projdir> onlineDirs = new();
         public List<string> ExceptionDirs; //папки исключения
-        private string _name;
+        private string _name = string.Empty;
         private DateTime? _lastSyncTime;
         private long _lastSyncSize;
+        private bool _autoSync;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public string Name
         {
@@ -31,8 +26,17 @@ public    class Project : INotifyPropertyChanged
                 OnPropertyChanged(nameof(Name));
             }
         }
-        public bool AutoSync { get; set; } 
-        
+        public bool AutoSync
+        {
+            get => _autoSync;
+            set
+            {
+                if (_autoSync == value) return;
+                _autoSync = value;
+                OnPropertyChanged(nameof(AutoSync));
+            }
+        }
+
         // Последняя успешная синхронизация
         public DateTime? LastSyncTime { 
             get => _lastSyncTime;
@@ -52,16 +56,42 @@ public    class Project : INotifyPropertyChanged
         {
             get
             {
-                if (onlineDirs.Count != 0) return onlineDirs;
-                else
+                if (onlineDirs.Count == 0)
                 {
                     foreach (var dir in AllProjectDirs)
                     {
-                        if (dir.IsOnline) onlineDirs.Add(dir);
+                        if (dir.IsOnline && !onlineDirs.Contains(dir))
+                        {
+                            onlineDirs.Add(dir);
+                        }
                     }
-                    return onlineDirs;
                 }
+
+                return onlineDirs;
             }
+        }
+
+        /// <summary>
+        /// Сбрасывает кеш доступности папок и списка файлов.
+        /// </summary>
+        public void InvalidateCaches()
+        {
+            onlineDirs.Clear();
+            foreach (var dir in AllProjectDirs)
+            {
+                dir.InvalidateCaches();
+            }
+        }
+
+        /// <summary>
+        /// Перепроверяет, какие папки проекта сейчас доступны.
+        /// </summary>
+        public void RefreshAvailability() => InvalidateCaches();
+
+        public void AddDir(Projdir dir)
+        {
+            AllProjectDirs.Add(dir);
+            InvalidateCaches();
         }
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -71,7 +101,8 @@ public    class Project : INotifyPropertyChanged
 
         public override string ToString()
         {
-            string syncTime = LastSyncTime?.ToString("yyyy-MM-dd HH:mm") ?? "Не синхронизирован";
+            string syncTime = LastSyncTime?.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+                ?? "Не синхронизирован";
             string size = FormatSize(LastSyncSize);
             return $"{Name} | {syncTime} | {size}";
         }
@@ -117,15 +148,10 @@ public    class Project : INotifyPropertyChanged
         }
         public void RemoveDir(string dir)
         {
-           // timer.Start("removeing dir", 1);
-            if (AllProjectDirs.Any(x => x.Dir == dir)) AllProjectDirs.Remove(GetProjDirFromString(dir));
-           // timer.Stop(1);
-        }
-
-        //возвращает тип Project по названию папки
-        private Projdir GetProjDirFromString(string dir)
-        {
-            return AllProjectDirs.First(x => x.Dir == dir);
+            if (AllProjectDirs.RemoveAll(x => string.Equals(x.Dir, dir, StringComparison.OrdinalIgnoreCase)) > 0)
+            {
+                InvalidateCaches();
+            }
         }
         /// <summary>
         /// <Project name = Name>
@@ -161,142 +187,206 @@ public    class Project : INotifyPropertyChanged
     /// <summary>
     /// Класс представляющий одну папку для данного проекта
     /// </summary>
- public   class Projdir
+    public class Projdir
     {
-        public string _dir;
-        private Project FromProject;
+        public string _dir = string.Empty;
+        private readonly Project? FromProject;
         private string pc_name;
         private bool isOnline;
-        private bool checkedOnline = false;
+        private bool checkedOnline;
+        private DateTime onlineCheckedAtUtc;
+        private FilesDates? _allfiles;
+
+        private static readonly TimeSpan OnlineCacheTtl = TimeSpan.FromSeconds(2);
+        private static readonly DateTime DefaultDate = new(2000, 1, 1);
+        private static readonly string[] IgnoredFileNames = { "Thumbs.db", "desktop.ini" };
+
         /// <summary>
         /// Имя компъютера NetBios, на которой находится папка
         /// </summary>
         public string PC_Name
         {
-            get
-            {
-                return pc_name;
-            }
-            set
-            {
-                pc_name = value;
-            }
+            get => pc_name;
+            set => pc_name = value;
         }
+
         public string Dir
         {
-            get
-            {
-                if (PC_Name == CONSTS.FlashDrive) //если флешка, то добавит букву диска
-                    return (CONSTS.GetDriveLetter() + _dir);
-                else return _dir;
-            }
+            get => PC_Name == CONSTS.FlashDrive
+                ? CONSTS.CombineWithDriveLetter(_dir)
+                : _dir;
             set
             {
                 if (CONSTS.FlashDrive == PC_Name)//если флешка
                 {
-                    var seg = value.Split('\\')[0];
-                    _dir = value.Substring(seg.Length);//сохраняем без буквы диска
+                    var root = Path.GetPathRoot(value) ?? string.Empty;
+                    _dir = value.Length > root.Length ? value.Substring(root.Length) : string.Empty;
+
+                    if (!string.IsNullOrEmpty(_dir) &&
+                        _dir[0] != Path.DirectorySeparatorChar &&
+                        _dir[0] != Path.AltDirectorySeparatorChar)
+                    {
+                        _dir = Path.DirectorySeparatorChar + _dir;
+                    }
                 }
-                else _dir = value;
+                else
+                {
+                    _dir = value;
+                }
             }
         }
+
         public bool IsOnline
         {
             get
             {
-                //tmr.Start("Checking isOnline: "+Dir, 2);
-                if (checkedOnline) return isOnline;
-                else
+                var now = DateTime.UtcNow;
+                if (checkedOnline && (now - onlineCheckedAtUtc) < OnlineCacheTtl)
                 {
-                    isOnline =  Directory.Exists(Dir);
-                    checkedOnline = true;
+                    return isOnline;
                 }
+
+                if (PC_Name == CONSTS.FlashDrive && string.IsNullOrWhiteSpace(CONSTS.GetDriveLetter()))
+                {
+                    isOnline = false;
+                    checkedOnline = true;
+                    onlineCheckedAtUtc = now;
+                    return false;
+                }
+
+                isOnline = Directory.Exists(Dir);
+                checkedOnline = true;
+                onlineCheckedAtUtc = now;
                 return isOnline;
-               // tmr.Stop(2);
             }
         }
-        private filesdates _allfiles;
-
-        private DateTime DefaultDate = new DateTime(2000, 1, 1);
 
         public Projdir(string dir, Project project)
+            : this(dir, project, Environment.MachineName)
         {
-            Dir = dir;
-            pc_name = System.Environment.MachineName;
-            FromProject = project;
         }
+
         public Projdir(string dir, Project project, string pc)
         {
-            Dir = dir;
             pc_name = pc;
             FromProject = project;
+            Dir = dir;
         }
 
         /// <summary>
-        /// Поиск файла и даты в списке всех файлов,
+        /// Сбрасывает кеш доступности и список файлов папки.
         /// </summary>
-        /// <param name="relativeFilePath"></param>
-        /// <returns><key = PathToFile, value = LastModified></returns>
+        public void InvalidateCaches()
+        {
+            checkedOnline = false;
+            isOnline = false;
+            _allfiles = null;
+        }
+
+        /// <summary>
+        /// Поиск файла и даты в списке всех файлов.
+        /// </summary>
         public KeyValuePair<string, DateTime> FindFile(string relativeFilePath)
         {
-            string ABSpath = Dir + relativeFilePath;
-            foreach (var file in AllFiles())
+            var baseDir = Dir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var absolutePath = relativeFilePath.StartsWith('\\') || relativeFilePath.StartsWith('/')
+                ? baseDir + relativeFilePath
+                : baseDir + Path.DirectorySeparatorChar + relativeFilePath;
+
+            return AllFiles().TryGetValue(absolutePath, out var lastWrite)
+                ? new KeyValuePair<string, DateTime>(absolutePath, lastWrite)
+                : default;
+        }
+
+        /// <summary>
+        /// Dictionary&lt;file, last write time&gt; всех файлов в Projdir.
+        /// </summary>
+        public FilesDates AllFiles(bool useCache = true)
+        {
+            if (_allfiles is not null && useCache) return _allfiles;
+
+            var result = new FilesDates(StringComparer.OrdinalIgnoreCase);
+            if (!IsOnline) return result;
+
+            var exceptionPaths = new List<string>();
+            var exceptionPatterns = new List<string>();
+
+            foreach (var exception in FromProject?.ExceptionDirs ?? new List<string>())
             {
-                if (file.Key == ABSpath)
+                if (string.IsNullOrWhiteSpace(exception)) continue;
+
+                if (exception.Contains('*') || exception.Contains('?'))
                 {
-                    return file;
+                    exceptionPatterns.Add(exception.Trim());
+                }
+                else
+                {
+                    exceptionPaths.Add(NormalizeRelative(exception));
                 }
             }
-            return new KeyValuePair<string, DateTime>();
-        }
-        /// <summary>
-        /// Dictionary<files,datetime last write> всех файлов в Projdir
-        /// </summary>
-        public filesdates AllFiles(bool useCache=true)
-        {
-            if (_allfiles != null && useCache) return _allfiles; // Используем кэш, если данные уже загружены
 
-            var res = new filesdates();
-            if (!IsOnline) return res; // Если папка оффлайн, возвращаем пустой список
+            var options = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.System | FileAttributes.ReparsePoint,
+                MatchType = MatchType.Simple
+            };
 
             try
             {
-                // Храним исключенные пути как относительные
-                var exceptionPaths = new HashSet<string>(
-                    FromProject.ExceptionDirs.Where(e => !e.Contains("*")),
-                    StringComparer.OrdinalIgnoreCase
-                );
-
-                // Отдельно храним шаблоны (*.bak, *.tmp и т. д.)
-                var exceptionPatterns = FromProject.ExceptionDirs.Where(e => e.Contains("*")).ToList();
-
-                foreach (var file in Directory.EnumerateFiles(Dir, "*", SearchOption.AllDirectories))
+                foreach (var file in Directory.EnumerateFiles(Dir, "*", options))
                 {
-                    // Получаем относительный путь файла внутри папки проекта
-                    string relativePath = Form1.GetRelativePath(file, Dir);
+                    var relativePath = Form1.GetRelativePath(file, Dir);
+                    if (IsExcluded(relativePath, exceptionPaths, exceptionPatterns)) continue;
 
-                    // Проверяем, не находится ли файл в исключениях (сравниваем относительный путь)
-                    if (exceptionPaths.Any(x=>relativePath.Contains(x)))
-                        continue;
-
-                    // Проверяем, подпадает ли файл под шаблон (*.bak, *.tmp)
-                    if (exceptionPatterns.Any(pattern => MatchesPattern(relativePath, pattern)))
-                        continue;
-
-                    res[file] = File.GetLastWriteTime(file);
+                    try
+                    {
+                        result[file] = File.GetLastWriteTime(file);
+                    }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
                 }
             }
-            catch (Exception) { return res; } // Обрабатываем возможные ошибки доступа к файлам
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
 
-            _allfiles = res; // Кэшируем результат
-            return res;
-
+            _allfiles = result;
+            return result;
         }
 
-        private bool MatchesPattern(string filePath, string pattern)
+        private static string NormalizeRelative(string path) =>
+            path.Replace('/', '\\').Trim('\\');
+
+        private static bool IsExcluded(string relativePath, List<string> exceptionPaths, List<string> exceptionPatterns)
         {
-            string fileName = Path.GetFileName(filePath);
-            return Regex.IsMatch(fileName, "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$", RegexOptions.IgnoreCase);
+            var normalized = NormalizeRelative(relativePath);
+            var fileName = Path.GetFileName(normalized);
+
+            if (IgnoredFileNames.Any(x => fileName.Equals(x, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            foreach (var path in exceptionPaths)
+            {
+                if (normalized.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+                    normalized.StartsWith(path + "\\", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            foreach (var pattern in exceptionPatterns)
+            {
+                if (FileSystemName.MatchesSimpleExpression(pattern, fileName, ignoreCase: true) ||
+                    FileSystemName.MatchesSimpleExpression(pattern, normalized, ignoreCase: true))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
 

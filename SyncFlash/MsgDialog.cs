@@ -249,14 +249,32 @@ namespace SyncFlash
                 DataGridViewRow selectedrow = dgv.SelectedRows[0];
                 int Number = (int)selectedrow.Cells["Number"].Value;//number of selected queue
                 Queue selectedQueue = ReturnedQueue.Find(x => x.Number == Number);
-                System.IO.File.Delete(selectedQueue.SourceFile);
+                if (selectedQueue is null) return;
+
+                var answer = MessageBox.Show(
+                    $"Удалить файл (в корзину)?{Environment.NewLine}{Environment.NewLine}{selectedQueue.SourceFile}",
+                    "Удаление выбранного файла",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2);
+
+                if (answer != DialogResult.Yes) return;
+
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                    selectedQueue.SourceFile,
+                    Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                    Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+
                 if (!selectedQueue.isNewFile)
                 {
-                    System.IO.File.Delete(selectedQueue.TargetFile);
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
+                        selectedQueue.TargetFile,
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
                 }
+
                 ReturnedQueue.Remove(selectedQueue);
                 DisplayQueues(ReturnedQueue);
-
             }
             catch (Exception ex)
             {

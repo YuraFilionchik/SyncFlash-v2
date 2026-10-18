@@ -191,7 +191,7 @@
             checkBox1.TabIndex = 5;
             checkBox1.Text = "OnlineOnly";
             checkBox1.UseVisualStyleBackColor = true;
-            checkBox1.CheckedChanged += CheckBox1_CheckedChanged_1;
+            checkBox1.CheckedChanged += CheckBox1_CheckedChanged;
             // 
             // listExceptions
             // 

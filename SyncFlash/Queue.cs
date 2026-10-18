@@ -1,47 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace SyncFlash
+﻿namespace SyncFlash
 {
     public class Queue
     {
         /// <summary>
-        /// Number of queue
+        /// Номер записи внутри текущей очереди.
         /// </summary>
-        public int Number;
+        public int Number { get; set; }
+
         /// <summary>
-        /// Need for Copying
+        /// Нужно ли копировать файл.
         /// </summary>
-        public bool Active;
-        public string SourceFile;
-        public string TargetFile;
-        public string SourceFileProjectDir;
-        public string TargetFileProjectDir;
-        public DateTime DateSource;
-        public DateTime DateTarget;
-        public bool isNewFile;
+        public bool Active { get; set; }
+
+        public string SourceFile { get; set; } = string.Empty;
+        public string TargetFile { get; set; } = string.Empty;
+        public string SourceFileProjectDir { get; set; } = string.Empty;
+        public string TargetFileProjectDir { get; set; } = string.Empty;
+
         /// <summary>
-        /// Count of created objects
+        /// Относительный путь файла внутри папки проекта — ключ дедупликации.
         /// </summary>
-        public static int Count = 0;
+        public string RelativePath { get; set; } = string.Empty;
+
+        public DateTime DateSource { get; set; }
+        public DateTime DateTarget { get; set; }
+        public bool isNewFile { get; set; }
+
         public Queue()
         {
-            Count++;
-            this.Active = true;
+            Active = true;
         }
+
         public Queue(bool active, string source, string target, string srcProjDir, string targProjDir, DateTime dateS, DateTime dateT, bool isnew)
         {
-            Count++;
-            this.Active = active;
-            Number = Count;
+            Active = active;
             SourceFile = source;
             TargetFile = target;
-            DateSource = dateS;
-            DateTarget = dateT;
             SourceFileProjectDir = srcProjDir;
             TargetFileProjectDir = targProjDir;
+            DateSource = dateS;
+            DateTarget = dateT;
             isNewFile = isnew;
         }
     }
