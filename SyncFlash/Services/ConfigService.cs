@@ -44,33 +44,38 @@ namespace SyncFlash.Services
                 using var reader = XmlReader.Create(stream, settings);
                 var doc = XDocument.Load(reader);
 
-                var list = doc.Descendants(ProjXML)
+                var list = doc.Descendants()
+                              .Where(x => string.Equals(x.Name.LocalName, ProjXML, StringComparison.OrdinalIgnoreCase))
                               .Select(p =>
                               {
-                                  var project = new Project(p.Attribute("name")?.Value ?? "Unknown")
+                                  var lastSyncValue = GetAttributeValue(p, "lastSync");
+                                  var lastSizeValue = GetAttributeValue(p, "lastSize");
+                                  var autoSyncValue = GetAttributeValue(p, "autoSync", "Autosync");
+
+                                  var project = new Project(GetAttributeValue(p, "name") ?? "Unknown")
                                   {
                                       LastSyncTime = DateTime.TryParse(
-                                          p.Attribute("lastSync")?.Value,
+                                          lastSyncValue,
                                           CultureInfo.InvariantCulture,
                                           DateTimeStyles.None,
                                           out var date) ? date : null,
                                       LastSyncSize = long.TryParse(
-                                          p.Attribute("lastSize")?.Value,
+                                          lastSizeValue,
                                           NumberStyles.Integer,
                                           CultureInfo.InvariantCulture,
                                           out var size) ? size : 0,
-                                      AutoSync = bool.TryParse(p.Attribute("autoSync")?.Value, out var auto) && auto,
-                                      ExceptionDirs = p.Elements("ExceptionDir")
-                                          .Select(x => x.Attribute("path")?.Value ?? string.Empty)
+                                      AutoSync = bool.TryParse(autoSyncValue, out var auto) && auto,
+                                      ExceptionDirs = ElementsNamed(p, "ExceptionDir")
+                                          .Select(x => GetAttributeValue(x, "path") ?? string.Empty)
                                           .Where(x => x.Length > 0)
                                           .ToList()
                                   };
 
-                                  project.AllProjectDirs = p.Elements("Directory")
+                                  project.AllProjectDirs = ElementsNamed(p, "Directory")
                                       .Select(x =>
                                       {
-                                          var netBios = x.Attribute("NetBios")?.Value ?? Environment.MachineName;
-                                          var savedPath = x.Attribute("path")?.Value ?? string.Empty;
+                                          var netBios = GetAttributeValue(x, "NetBios") ?? Environment.MachineName;
+                                          var savedPath = GetAttributeValue(x, "path") ?? string.Empty;
 
                                           var finalPath = netBios == CONSTS.FlashDrive
                                               ? CONSTS.CombineWithDriveLetter(savedPath)
@@ -95,6 +100,25 @@ namespace SyncFlash.Services
                 return new BindingList<Project>();
             }
         }
+
+        /// <summary>
+        /// Читает атрибут без учёта регистра: старые конфиги используют Autosync/directory.
+        /// </summary>
+        private static string? GetAttributeValue(XElement element, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                var attribute = element.Attributes().FirstOrDefault(a =>
+                    string.Equals(a.Name.LocalName, name, StringComparison.OrdinalIgnoreCase));
+
+                if (attribute is not null) return attribute.Value;
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<XElement> ElementsNamed(XElement parent, string name) =>
+            parent.Elements().Where(x => string.Equals(x.Name.LocalName, name, StringComparison.OrdinalIgnoreCase));
 
         private void TryBackupCorruptFile()
         {
